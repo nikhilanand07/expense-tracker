@@ -1,0 +1,93 @@
+/* Dashboard Icon Styling */
+.dashboard-icon-container {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.dashboard-icon-gradient {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  opacity: 0.15;
+}
+
+.dashboard-icon-circle {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+  box-shadow: 0 2px 4px rgba(106, 17, 203, 0.3);
+}
+
+.dashboard-icon-container.light .dashboard-icon-circle {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.dashboard-icon-container.dark .dashboard-icon-circle {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-icon {
+  font-size: 16px;
+}
+
+.dashboard-icon-container.light .dashboard-icon {
+  color: #6a11cb;
+}
+
+.dashboard-icon-container.dark .dashboard-icon {
+  color: #ffffff;
+}
+
+/* Navbar styling enhancements */
+.navbar {
+  border-bottom: 1px solid;
+  transition: all 0.3s ease;
+}
+
+.navbar.bg-light {
+  border-bottom-color: #e0e0e0;
+}
+
+.navbar.bg-dark {
+  border-bottom-color: #333333;
+}
+
+/* Button hover effects */
+.btn-outline-dark:hover,
+.btn-outline-light:hover {
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Nav link hover effects */
+.nav-link {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 50%;
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-link:hover::after {
+  width: 80%;
+}

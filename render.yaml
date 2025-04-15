@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: expense-tracker-api
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: NODE_ENV=production npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false # This will be set manually in the Render dashboard
+      - key: JWT_SECRET
+        sync: false # This will be set manually in the Render dashboard
+      - key: JWT_EXPIRE
+        value: 30d
+    autoDeploy: true
+    plan: free

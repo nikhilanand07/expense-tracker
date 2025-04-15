@@ -1,0 +1,308 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8f9fa;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-card {
+  max-width: 450px;
+  width: 100%;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
+.landing-page {
+  min-height: 100vh;
+}
+
+.hero-section {
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  padding: 100px 0;
+}
+
+.feature-card {
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+}
+
+.expense-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  transition: transform 0.2s ease;
+}
+
+.expense-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-container {
+  padding: 20px;
+}
+
+.filter-section {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  background-color: #6a11cb;
+  border-color: #6a11cb;
+}
+
+.btn-primary:hover {
+  background-color: #5a0cb2;
+  border-color: #5a0cb2;
+}
+
+.navbar {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.expense-form {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* AI Insights Button Styles */
+.insights-link .pulse-effect {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(74, 222, 128, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+  }
+}
+
+/* Hover effect for insights link */
+.insights-link:hover {
+  color: white !important;
+  text-decoration: none;
+}
+
+/* Active state for insights link */
+.insights-link.active {
+  color: white !important;
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+/* Common styles that change with theme */
+body.dark-mode .card,
+body.dark-mode .expense-form,
+body.dark-mode .filter-section,
+body.dark-mode .modal-content {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  border-color: #333;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #6a11cb;
+  box-shadow: 0 0 0 0.25rem rgba(106, 17, 203, 0.25);
+}
+
+body.dark-mode .table {
+  color: #e0e0e0;
+}
+
+body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+}
+
+body.dark-mode .pagination .page-link {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode .pagination .page-item.active .page-link {
+  background-color: #6a11cb;
+  border-color: #6a11cb;
+}
+
+body.dark-mode .btn-outline-secondary {
+  color: #e0e0e0;
+  border-color: #666;
+}
+
+body.dark-mode .btn-outline-secondary:hover {
+  background-color: #444;
+  color: #fff;
+}
+
+body.dark-mode .react-datepicker {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode .react-datepicker__header {
+  background-color: #1e1e1e;
+  border-color: #444;
+}
+
+body.dark-mode .react-datepicker__day-name,
+body.dark-mode .react-datepicker__day,
+body.dark-mode .react-datepicker__time-name {
+  color: #e0e0e0;
+}
+
+body.dark-mode .react-datepicker__day:hover {
+  background-color: #444;
+}
+
+body.dark-mode .react-datepicker__day--selected {
+  background-color: #6a11cb;
+}
+
+body.dark-mode .react-datepicker__input-container input {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+/* Chart styles for dark mode */
+body.dark-mode .chart-container {
+  background-color: #1e1e1e;
+  border-color: #333;
+}
+
+/* Expense item styles for dark mode */
+body.dark-mode .expense-item {
+  background-color: #1e1e1e;
+  border-color: #333;
+}
+
+body.dark-mode .expense-item:hover {
+  background-color: #2d2d2d;
+}
+
+/* Expense item text fixes for dark mode */
+body.dark-mode .text-muted {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .expense-card {
+  background-color: #1e1e1e;
+  border-color: #333;
+}
+
+body.dark-mode .expense-card:hover {
+  background-color: #2d2d2d;
+}
+
+body.dark-mode .expense-card .text-primary {
+  color: #a66eff !important;
+}
+
+body.dark-mode .expense-card .btn-outline-primary {
+  color: #a66eff;
+  border-color: #a66eff;
+}
+
+body.dark-mode .expense-card .btn-outline-primary:hover {
+  background-color: #a66eff;
+  color: #1e1e1e;
+}
+
+/* Dark mode styles for form inputs */
+body.dark-mode .dark-input,
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode .dark-input:focus,
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #a66eff;
+  box-shadow: 0 0 0 0.25rem rgba(166, 110, 255, 0.25);
+}
+
+body.dark-mode .form-control::placeholder {
+  color: #aaa;
+}
+
+body.dark-mode .react-datepicker-wrapper .react-datepicker__input-container input {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode .invalid-feedback {
+  color: #ff8a8a;
+}
+
+/* Theme toggle button animation */
+.theme-toggle-btn {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle-btn:hover {
+  transform: rotate(30deg);
+}
