@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 const AuthContext = createContext();
 
@@ -14,16 +14,12 @@ export const AuthProvider = ({ children }) => {
     const checkLoggedIn = async () => {
       if (localStorage.getItem('token')) {
         try {
-          // Set auth token header
-          setAuthToken(localStorage.getItem('token'));
-          
-          // Get user data
-          const res = await axios.get('/api/users/profile');
+          // Get user data - the token is automatically added by the api service
+          const res = await api.get('/api/users/profile');
           setUser(res.data.user);
         } catch (error) {
           // Clear token and user data if invalid
           localStorage.removeItem('token');
-          setAuthToken(null);
           setUser(null);
         }
       }
@@ -33,25 +29,13 @@ export const AuthProvider = ({ children }) => {
     checkLoggedIn();
   }, []);
 
-  // Set auth token as default header
-  const setAuthToken = (token) => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
-    }
-  };
-
   // Register user
   const register = async (userData) => {
     try {
-      const res = await axios.post('/api/users/signup', userData);
+      const res = await api.post('/api/users/signup', userData);
       
       // Save token to local storage
       localStorage.setItem('token', res.data.token);
-      
-      // Set token to auth header
-      setAuthToken(res.data.token);
       
       // Set user
       setUser(res.data.user);
@@ -68,13 +52,10 @@ export const AuthProvider = ({ children }) => {
   // Login user
   const login = async (userData) => {
     try {
-      const res = await axios.post('/api/users/login', userData);
+      const res = await api.post('/api/users/login', userData);
       
       // Save token to local storage
       localStorage.setItem('token', res.data.token);
-      
-      // Set token to auth header
-      setAuthToken(res.data.token);
       
       // Set user
       setUser(res.data.user);
@@ -91,7 +72,7 @@ export const AuthProvider = ({ children }) => {
   // Update user currency
   const updateCurrency = async (currency) => {
     try {
-      const res = await axios.put('/api/users/currency', { currency });
+      const res = await api.put('/api/users/currency', { currency });
       
       // Update user in state
       setUser(res.data.user);
@@ -109,9 +90,6 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     // Remove token from local storage
     localStorage.removeItem('token');
-    
-    // Remove auth header
-    setAuthToken(null);
     
     // Clear user
     setUser(null);

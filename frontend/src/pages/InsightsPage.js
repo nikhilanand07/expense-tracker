@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Spinner, Alert, Form } from 'react-bootstrap';
 import { Bar, Pie, Doughnut } from 'react-chartjs-2';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { formatAmount } from '../utils/currencyUtils';
+import api from '../services/api';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -109,7 +109,7 @@ const InsightsPage = () => {
           break;
       }
 
-      const response = await axios.get('/api/expenses', { params });
+      const response = await api.get('/api/expenses', { params });
       setExpenses(response.data.data);
       setError('');
     } catch (error) {

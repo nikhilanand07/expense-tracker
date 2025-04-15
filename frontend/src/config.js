@@ -4,7 +4,7 @@ const config = {
     apiUrl: 'http://localhost:5001'
   },
   production: {
-    apiUrl: process.env.REACT_APP_API_URL || 'https://your-backend-url.onrender.com'
+    apiUrl: process.env.REACT_APP_API_URL || 'https://expense-tracker-backend-rosy.vercel.app'
   }
 };
 

@@ -1,10 +1,10 @@
 import React from 'react';
 import { Container, Row, Col, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import ExpenseForm from '../components/ExpenseForm';
 import { useTheme } from '../context/ThemeContext';
+import api from '../services/api'; // <--- updated import
 
 const AddExpense = () => {
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ const AddExpense = () => {
   // Handle form submission
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
-      await axios.post('/api/expenses', values);
+      await api.post('/api/expenses', values); // <--- updated with correct path
       toast.success('Expense added successfully');
       navigate('/dashboard');
     } catch (error) {
