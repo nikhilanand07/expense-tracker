@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Button, Alert, Spinner, Pagination, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import ExpenseItem from '../components/ExpenseItem';
 import ExpenseFilter from '../components/ExpenseFilter';
 import { FaPlus } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { formatAmount } from '../utils/currencyUtils';
+import api from '../services/api'; // Import the api service
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -94,7 +94,7 @@ const Dashboard = () => {
         params.mode_of_payment = filterParams.mode_of_payment;
       }
 
-      const response = await axios.get('/api/expenses', { params });
+      const response = await api.get('/api/expenses', { params });
       setExpenses(response.data.data);
       setCurrentPage(1); // Reset to first page when filters change
       setError('');
@@ -110,7 +110,7 @@ const Dashboard = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this expense?')) {
       try {
-        await axios.delete(`/api/expenses/${id}`);
+        await api.delete(`/api/expenses/${id}`);
         
         // Update the expenses list after deletion
         setExpenses(expenses.filter(expense => expense._id !== id));

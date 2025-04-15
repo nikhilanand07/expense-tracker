@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Alert, Spinner } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { toast } from 'react-toastify';
 import ExpenseForm from '../components/ExpenseForm';
 import { useTheme } from '../context/ThemeContext';
@@ -18,7 +18,7 @@ const EditExpense = () => {
   useEffect(() => {
     const fetchExpense = async () => {
       try {
-        const response = await axios.get(`/api/expenses/${id}`);
+        const response = await api.get(`/api/expenses/${id}`);
         
         // Format date for the form
         const expenseData = {
@@ -42,7 +42,7 @@ const EditExpense = () => {
   // Handle form submission
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
-      await axios.put(`/api/expenses/${id}`, values);
+      await api.put(`/api/expenses/${id}`, values);
       toast.success('Expense updated successfully');
       navigate('/dashboard');
     } catch (error) {
