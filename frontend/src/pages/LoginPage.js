@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 
 const LoginPage = () => {
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const { darkMode } = useTheme();
   const navigate = useNavigate();
 
   // Validation schema
@@ -38,7 +40,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="auth-container">
+    <div className={`auth-container ${darkMode ? 'dark-mode' : ''}`}>
       <div className="auth-card">
         <h2 className="text-center mb-4">Login to Your Account</h2>
         
@@ -68,7 +70,7 @@ const LoginPage = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   isInvalid={touched.email && errors.email}
-                  placeholder="Enter your email"
+                  placeholder="Enter your email or username"
                 />
                 <Form.Control.Feedback type="invalid">
                   {errors.email}
