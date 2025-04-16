@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Row, Col, Button, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FaChartLine, FaMoneyBillWave, FaShieldAlt, FaMobileAlt } from 'react-icons/fa';
+import expenseTrackerImage from '../assets/images/expense-tracker.svg';
 
 const LandingPage = () => {
   return (
@@ -27,7 +28,7 @@ const LandingPage = () => {
             </Col>
             <Col lg={6}>
               <img 
-                src="https://via.placeholder.com/600x400?text=Expense+Tracker" 
+                src={expenseTrackerImage} 
                 alt="Expense Tracker" 
                 className="img-fluid rounded shadow"
               />
