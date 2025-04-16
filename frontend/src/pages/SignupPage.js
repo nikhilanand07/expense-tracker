@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Form, Button, Alert, Row, Col } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { currencies } from '../utils/currencyUtils';
@@ -9,6 +10,7 @@ import { currencies } from '../utils/currencyUtils';
 const SignupPage = () => {
   const [error, setError] = useState('');
   const { register } = useAuth();
+  const { darkMode } = useTheme();
   const navigate = useNavigate();
 
   // Validation schema
@@ -53,7 +55,7 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="auth-container">
+    <div className={`auth-container ${darkMode ? 'dark-mode' : ''}`}>
       <div className="auth-card">
         <h2 className="text-center mb-4">Create an Account</h2>
         
@@ -127,7 +129,7 @@ const SignupPage = () => {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   isInvalid={touched.email && errors.email}
-                  placeholder="Enter your email"
+                  placeholder="Enter your email or username"
                 />
                 <Form.Control.Feedback type="invalid">
                   {errors.email}
