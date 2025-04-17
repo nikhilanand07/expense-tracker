@@ -59,34 +59,67 @@ const Dashboard = () => {
     return expenseList.reduce((sum, expense) => sum + (expense.amount || 0), 0);
   }, []);
 
-  // Update displayed expenses when current page or expenses change
-  useEffect(() => {
-    if (expenses.length > 0) {
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const paginatedExpenses = expenses.slice(startIndex, endIndex);
-      
-      setDisplayedExpenses(paginatedExpenses);
-      setTotalPages(Math.ceil(expenses.length / itemsPerPage));
-    } else {
-      setDisplayedExpenses([]);
-      setTotalPages(1);
-    }
-  }, [expenses, currentPage, itemsPerPage]);
-
-  // Update total amount when allExpenses changes
-  useEffect(() => {
-    const total = calculateTotalAmount(allExpenses);
-    setTotalAmount(total);
-    setTotalCount(allExpenses.length);
-  }, [allExpenses, calculateTotalAmount]);
-
   // Handle page change
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
+    fetchPagedExpenses(pageNumber);
   };
 
-  // Fetch expenses
+  // Fetch a specific page of expenses
+  const fetchPagedExpenses = async (page = 1) => {
+    setLoading(true);
+    try {
+      // Build query parameters
+      const params = {};
+      if (filters.startDate) {
+        params.startDate = filters.startDate.toISOString();
+      }
+      if (filters.endDate) {
+        params.endDate = filters.endDate.toISOString();
+      }
+      if (filters.category) {
+        params.category = filters.category;
+      }
+      if (filters.mode_of_payment) {
+        params.mode_of_payment = filters.mode_of_payment;
+      }
+
+      // Fetch paginated expenses for display
+      const response = await api.get('/api/expenses', { 
+        params: {
+          ...params,
+          page: page,
+          limit: itemsPerPage
+        }
+      });
+      
+      const expensesData = response.data.data;
+      
+      // Ensure amount is a number for each expense
+      const processedExpenses = expensesData.map(expense => ({
+        ...expense,
+        amount: typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount) || 0
+      }));
+      
+      setExpenses(processedExpenses);
+      setDisplayedExpenses(processedExpenses);
+      
+      // Update total pages from the API response
+      const totalItems = response.data.count;
+      const calculatedTotalPages = Math.ceil(totalItems / itemsPerPage);
+      setTotalPages(calculatedTotalPages);
+      setTotalCount(totalItems);
+      
+      setError('');
+    } catch (error) {
+      setError('Failed to fetch expenses. Please try again.');
+      console.error('Error fetching expenses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch expenses with calculation of total amount
   const fetchExpenses = async (filterParams = {}) => {
     setLoading(true);
     try {
@@ -121,30 +154,15 @@ const Dashboard = () => {
       
       setAllExpenses(processedAllExpenses);
       
-      // Then fetch paginated expenses for display
-      const response = await api.get('/api/expenses', { 
-        params: {
-          ...params,
-          page: 1,
-          limit: itemsPerPage
-        }
-      });
+      // Calculate total amount
+      const total = calculateTotalAmount(processedAllExpenses);
+      setTotalAmount(total);
       
-      const expensesData = response.data.data;
-      
-      // Ensure amount is a number for each expense
-      const processedExpenses = expensesData.map(expense => ({
-        ...expense,
-        amount: typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount) || 0
-      }));
-      
-      setExpenses(processedExpenses);
-      setCurrentPage(1); // Reset to first page when filters change
-      setError('');
+      // Then fetch first page of expenses for display
+      await fetchPagedExpenses(1);
     } catch (error) {
       setError('Failed to fetch expenses. Please try again.');
       console.error('Error fetching expenses:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -158,6 +176,14 @@ const Dashboard = () => {
         // Update both expense lists after deletion
         setExpenses(expenses.filter(expense => expense._id !== id));
         setAllExpenses(allExpenses.filter(expense => expense._id !== id));
+        
+        // If the current page becomes empty (except for the first page), go to the previous page
+        if (currentPage > 1 && displayedExpenses.length === 1) {
+          handlePageChange(currentPage - 1);
+        } else {
+          // Refresh the current page
+          fetchPagedExpenses(currentPage);
+        }
         
         toast.success('Expense deleted successfully');
       } catch (error) {
