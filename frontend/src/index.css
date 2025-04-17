@@ -79,6 +79,7 @@ code {
   padding: 20px;
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
 }
 
 .btn-primary {
@@ -343,4 +344,104 @@ body.dark-mode a:not(.btn):hover {
 
 .theme-toggle-btn:hover {
   transform: rotate(30deg);
+}
+
+/* Mobile optimizations */
+@media (max-width: 767.98px) {
+  .filter-section {
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background-color: var(--filter-bg-color, white);
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  body.dark-mode .filter-section {
+    background-color: var(--filter-dark-bg-color, #1e1e1e);
+    border-color: #333;
+  }
+  
+  .mobile-nav .nav-link {
+    border-radius: 5px;
+    padding: 10px 15px;
+    margin: 5px 0;
+    width: 100%;
+    text-align: left;
+  }
+  
+  .mobile-nav .nav-link:hover {
+    background-color: rgba(106, 17, 203, 0.1);
+  }
+  
+  body.dark-mode .mobile-nav .nav-link:hover {
+    background-color: rgba(166, 110, 255, 0.1);
+  }
+  
+  .navbar-collapse {
+    padding: 15px 0;
+  }
+  
+  /* Ensure proper spacing in navbar items */
+  .navbar-nav {
+    width: 100%;
+  }
+  
+  /* Fix for filter toggle button */
+  .filter-container .btn-outline-primary {
+    border-color: var(--primary-color, #6a11cb);
+    color: var(--primary-color, #6a11cb);
+  }
+  
+  body.dark-mode .filter-container .btn-outline-primary {
+    border-color: var(--primary-dark-color, #a66eff);
+    color: var(--primary-dark-color, #a66eff);
+  }
+  
+  /* Ensure proper spacing in mobile menu */
+  .mobile-nav {
+    padding: 10px 0;
+  }
+}
+
+/* Root variables for consistent colors */
+:root {
+  --primary-color: #6a11cb;
+  --primary-dark-color: #a66eff;
+  --filter-bg-color: white;
+  --filter-dark-bg-color: #1e1e1e;
+}
+
+/* Filter badge styling */
+.badge.bg-primary {
+  font-size: 0.7rem;
+  padding: 0.25em 0.6em;
+  border-radius: 10px;
+}
+
+/* Add some space between filter elements on mobile */
+@media (max-width: 767.98px) {
+  .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .filter-section .btn {
+    margin-top: 5px;
+  }
+  
+  /* Fix for navbar toggler */
+  .navbar-toggler {
+    border: 1px solid rgba(0,0,0,0.1);
+    padding: 0.25rem 0.5rem;
+  }
+  
+  body.dark-mode .navbar-toggler {
+    border-color: rgba(255,255,255,0.1);
+  }
+  
+  /* Ensure insights link is properly styled on mobile */
+  .insights-link {
+    width: auto !important;
+    justify-content: center;
+  }
 }
