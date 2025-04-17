@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar, Container, Nav, Button } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -12,20 +12,28 @@ const Header = () => {
   const { darkMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const [expanded, setExpanded] = useState(false);
+
+  // Check if the current route is the insights page
+  const isInsightsPage = location.pathname === '/insights';
+
+  // Close navbar when route changes
+  useEffect(() => {
+    setExpanded(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
-  // Check if the current route is the insights page
-  const isInsightsPage = location.pathname === '/insights';
-
   return (
     <Navbar 
       bg={darkMode ? 'dark' : 'white'} 
       variant={darkMode ? 'dark' : 'light'} 
       expand="lg" 
+      expanded={expanded}
+      onToggle={(expanded) => setExpanded(expanded)}
       className={`navbar ${darkMode ? 'navbar-dark' : ''}`}
     >
       <Container>
@@ -40,16 +48,19 @@ const Header = () => {
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="ms-auto">
+          <Nav className="ms-auto mobile-nav">
             {user ? (
               <>
-                <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>
+                <Nav.Link as={Link} to="/dashboard" className="my-2 my-lg-0" onClick={() => setExpanded(false)}>
+                  Dashboard
+                </Nav.Link>
                 
                 {/* Enhanced AI-themed Insights Link */}
                 <Nav.Link 
                   as={Link} 
                   to="/insights" 
-                  className={`insights-link ${isInsightsPage ? 'active' : ''}`}
+                  onClick={() => setExpanded(false)}
+                  className={`insights-link my-2 my-lg-0 ${isInsightsPage ? 'active' : ''}`}
                   style={{
                     background: isInsightsPage 
                       ? 'linear-gradient(90deg, #6a11cb 0%, #2575fc 100%)' 
@@ -57,7 +68,7 @@ const Header = () => {
                     color: '#fff',
                     borderRadius: '20px',
                     padding: '6px 15px',
-                    margin: '0 5px',
+                    margin: '8px 5px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '5px',
@@ -95,19 +106,22 @@ const Header = () => {
                   />
                 </Nav.Link>
                 
-                <div className="d-flex align-items-center">
+                <div className="d-flex flex-column flex-lg-row align-items-start align-items-lg-center mt-2 mt-lg-0">
                   {user && (
-                    <div className="d-flex align-items-center mx-2">
+                    <div className="d-flex align-items-center my-2 my-lg-0 mx-lg-2">
                       <CurrencySelector />
                     </div>
                   )}
-                  <div className="mx-2">
+                  <div className="my-2 my-lg-0 mx-lg-2">
                     <ThemeToggle />
                   </div>
                   <Button 
                     variant={darkMode ? "outline-light" : "outline-danger"} 
-                    className="ms-2" 
-                    onClick={handleLogout}
+                    className="my-2 my-lg-0 ms-lg-2" 
+                    onClick={() => {
+                      setExpanded(false);
+                      handleLogout();
+                    }}
                   >
                     Logout
                   </Button>
@@ -115,17 +129,22 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Nav.Link as={Link} to="/">Home</Nav.Link>
-                <Nav.Link as={Link} to="/login">Login</Nav.Link>
-                <div className="d-flex align-items-center">
-                  <div className="mx-2">
+                <Nav.Link as={Link} to="/" className="my-2 my-lg-0" onClick={() => setExpanded(false)}>
+                  Home
+                </Nav.Link>
+                <Nav.Link as={Link} to="/login" className="my-2 my-lg-0" onClick={() => setExpanded(false)}>
+                  Login
+                </Nav.Link>
+                <div className="d-flex flex-column flex-lg-row align-items-start align-items-lg-center mt-2 mt-lg-0">
+                  <div className="my-2 my-lg-0 mx-lg-2">
                     <ThemeToggle />
                   </div>
                   <Button 
                     variant={darkMode ? "light" : "primary"} 
-                    className="ms-2" 
+                    className="my-2 my-lg-0 ms-lg-2" 
                     as={Link} 
                     to="/signup"
+                    onClick={() => setExpanded(false)}
                   >
                     Sign Up
                   </Button>

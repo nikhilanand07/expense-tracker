@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
-import { Form, Row, Col, Button } from 'react-bootstrap';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Form, Row, Col, Button, Card } from 'react-bootstrap';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { FaFilter, FaTimes } from 'react-icons/fa';
 
 const ExpenseFilter = ({ filters, setFilters, onFilter }) => {
   // Category options
@@ -43,6 +44,27 @@ const ExpenseFilter = ({ filters, setFilters, onFilter }) => {
     { value: 'custom', label: 'Custom Date Range' }
   ];
 
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setIsFilterOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initialize on mount
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   // Handle date changes
   const handleDateChange = (field, date) => {
     setFilters({
@@ -65,7 +87,7 @@ const ExpenseFilter = ({ filters, setFilters, onFilter }) => {
       };
       
       setFilters(newFilters);
-      onFilter(newFilters); // Apply filters immediately
+      applyAndClose(newFilters); // Apply filters immediately
     }
   };
 
@@ -125,9 +147,17 @@ const ExpenseFilter = ({ filters, setFilters, onFilter }) => {
 
     // If not custom, apply the filter immediately
     if (timePeriod !== 'custom') {
-      onFilter(newFilters);
+      applyAndClose(newFilters);
     }
   };
+
+  // Apply filters and close on mobile
+  const applyAndClose = useCallback((newFilters) => {
+    onFilter(newFilters);
+    if (isMobile) {
+      setIsFilterOpen(false);
+    }
+  }, [onFilter, isMobile]);
 
   // Reset filters
   const handleReset = () => {
@@ -139,144 +169,163 @@ const ExpenseFilter = ({ filters, setFilters, onFilter }) => {
       timePeriod: 'currentMonth'
     };
     setFilters(resetFilters);
-    onFilter(resetFilters);
+    applyAndClose(resetFilters);
   };
 
-  // Apply custom date filters
-  const handleApplyCustomDates = (e) => {
-    e.preventDefault();
-    onFilter(filters);
+  // Toggle filter on mobile
+  const toggleFilter = () => {
+    setIsFilterOpen(!isFilterOpen);
   };
 
   return (
-    <div className="filter-section">
-      <h5 className="mb-3">Filter Expenses</h5>
-      
-      <Form onSubmit={handleApplyCustomDates}>
-        <Row className="mb-3">
-          <Col md={4} className="mb-3 mb-md-0">
-            <Form.Group controlId="timePeriod">
-              <Form.Label>Time Period</Form.Label>
-              <Form.Select
-                name="timePeriod"
-                value={filters.timePeriod}
-                onChange={handleSelectChange}
-              >
-                {timePeriods.map((period) => (
-                  <option key={period.value} value={period.value}>
-                    {period.label}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          
-          <Col md={4} className="mb-3 mb-md-0">
-            <Form.Group controlId="category">
-              <Form.Label>Category</Form.Label>
-              <Form.Select
-                name="category"
-                value={filters.category === '' ? 'All' : filters.category}
-                onChange={handleSelectChange}
-              >
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          
-          <Col md={4}>
-            <Form.Group controlId="mode_of_payment">
-              <Form.Label>Payment Method</Form.Label>
-              <Form.Select
-                name="mode_of_payment"
-                value={filters.mode_of_payment === '' ? 'All' : filters.mode_of_payment}
-                onChange={handleSelectChange}
-              >
-                {paymentModes.map((mode) => (
-                  <option key={mode} value={mode}>
-                    {mode}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-        </Row>
+    <div className="filter-container mb-4">
+      {/* Mobile Filter Toggle Button */}
+      {isMobile && (
+        <div className="mb-3">
+          <Button 
+            variant="outline-primary" 
+            className="w-100 d-flex justify-content-between align-items-center"
+            onClick={toggleFilter}
+          >
+            <span><FaFilter className="me-2" /> Filters {activeFilters > 0 && <span className="badge bg-primary ms-2">{activeFilters}</span>}</span>
+            <span>{isFilterOpen ? <FaTimes /> : '+'}</span>
+          </Button>
+        </div>
+      )}
 
-        {/* Only show date pickers for custom time period */}
-        {filters.timePeriod === 'custom' && (
-          <>
-            <Row className="mb-3">
-              <Col md={6} className="mb-3 mb-md-0">
-                <Form.Group controlId="startDate">
-                  <Form.Label>Start Date</Form.Label>
-                  <DatePicker
-                    selected={filters.startDate}
-                    onChange={(date) => handleDateChange('startDate', date)}
-                    selectsStart
-                    startDate={filters.startDate}
-                    endDate={filters.endDate}
-                    className="form-control"
-                    dateFormat="MMMM d, yyyy"
-                    isClearable
-                    placeholderText="Select start date"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group controlId="endDate">
-                  <Form.Label>End Date</Form.Label>
-                  <DatePicker
-                    selected={filters.endDate}
-                    onChange={(date) => {
-                      // Set time to end of day (23:59:59) for the end date
-                      if (date) {
-                        const endOfDay = new Date(date);
-                        endOfDay.setHours(23, 59, 59, 999);
-                        handleDateChange('endDate', endOfDay);
-                      } else {
-                        handleDateChange('endDate', null);
-                      }
-                    }}
-                    selectsEnd
-                    startDate={filters.startDate}
-                    endDate={filters.endDate}
-                    minDate={filters.startDate}
-                    maxDate={new Date()}
-                    className="form-control"
-                    dateFormat="MMMM d, yyyy"
-                    isClearable
-                    placeholderText="Select end date"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-            <Row className="mb-3">
-              <Col>
-                <Button variant="primary" type="submit">
-                  Apply Custom Dates
-                </Button>
-              </Col>
-            </Row>
-          </>
-        )}
+      {/* Filter Content - Always visible on desktop, toggleable on mobile */}
+      <div className={`filter-section ${isMobile && !isFilterOpen ? 'd-none' : 'd-block'}`}>
+        <h5 className="mb-3">Filter Expenses</h5>
         
-        <Row>
-          <Col>
-            <Button 
-              variant="outline-secondary" 
-              type="button" 
-              onClick={handleReset}
-              className="mt-2"
-            >
-              Reset Filters
-            </Button>
-          </Col>
-        </Row>
-      </Form>
+        <Form onSubmit={(e) => {
+          e.preventDefault();
+          applyAndClose(filters);
+        }}>
+          <Row className="mb-3">
+            <Col md={4} className="mb-3 mb-md-0">
+              <Form.Group controlId="timePeriod">
+                <Form.Label>Time Period</Form.Label>
+                <Form.Select
+                  name="timePeriod"
+                  value={filters.timePeriod}
+                  onChange={handleSelectChange}
+                >
+                  {timePeriods.map((period) => (
+                    <option key={period.value} value={period.value}>
+                      {period.label}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            
+            <Col md={4} className="mb-3 mb-md-0">
+              <Form.Group controlId="category">
+                <Form.Label>Category</Form.Label>
+                <Form.Select
+                  name="category"
+                  value={filters.category === '' ? 'All' : filters.category}
+                  onChange={handleSelectChange}
+                >
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            
+            <Col md={4}>
+              <Form.Group controlId="mode_of_payment">
+                <Form.Label>Payment Method</Form.Label>
+                <Form.Select
+                  name="mode_of_payment"
+                  value={filters.mode_of_payment === '' ? 'All' : filters.mode_of_payment}
+                  onChange={handleSelectChange}
+                >
+                  {paymentModes.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {mode}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          {/* Only show date pickers for custom time period */}
+          {filters.timePeriod === 'custom' && (
+            <>
+              <Row className="mb-3">
+                <Col md={6} className="mb-3 mb-md-0">
+                  <Form.Group controlId="startDate">
+                    <Form.Label>Start Date</Form.Label>
+                    <DatePicker
+                      selected={filters.startDate}
+                      onChange={(date) => handleDateChange('startDate', date)}
+                      selectsStart
+                      startDate={filters.startDate}
+                      endDate={filters.endDate}
+                      className="form-control"
+                      dateFormat="MMMM d, yyyy"
+                      isClearable
+                      placeholderText="Select start date"
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group controlId="endDate">
+                    <Form.Label>End Date</Form.Label>
+                    <DatePicker
+                      selected={filters.endDate}
+                      onChange={(date) => {
+                        // Set time to end of day (23:59:59) for the end date
+                        if (date) {
+                          const endOfDay = new Date(date);
+                          endOfDay.setHours(23, 59, 59, 999);
+                          handleDateChange('endDate', endOfDay);
+                        } else {
+                          handleDateChange('endDate', null);
+                        }
+                      }}
+                      selectsEnd
+                      startDate={filters.startDate}
+                      endDate={filters.endDate}
+                      minDate={filters.startDate}
+                      maxDate={new Date()}
+                      className="form-control"
+                      dateFormat="MMMM d, yyyy"
+                      isClearable
+                      placeholderText="Select end date"
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+              <Row className="mb-3">
+                <Col>
+                  <Button variant="primary" type="submit">
+                    Apply Custom Dates
+                  </Button>
+                </Col>
+              </Row>
+            </>
+          )}
+          
+          <Row>
+            <Col>
+              <Button 
+                variant="outline-secondary" 
+                type="button" 
+                onClick={handleReset}
+                className="mt-2"
+              >
+                Reset Filters
+              </Button>
+            </Col>
+          </Row>
+        </Form>
+      </div>
     </div>
   );
 };
