@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Button, Alert, Spinner, Pagination, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -12,6 +12,7 @@ import api from '../services/api'; // Import the api service
 const Dashboard = () => {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState([]);
+  const [allExpenses, setAllExpenses] = useState([]); // Store all expenses for calculation
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
@@ -28,6 +29,7 @@ const Dashboard = () => {
   const [itemsPerPage] = useState(10);
   const [displayedExpenses, setDisplayedExpenses] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Set initial time period (current month)
   useEffect(() => {
@@ -51,24 +53,33 @@ const Dashboard = () => {
     }
   }, [filters.startDate, filters.endDate]); // Re-fetch when date filters change
 
+  // Calculate total amount - separate from pagination
+  const calculateTotalAmount = useCallback((expenseList) => {
+    if (!expenseList || expenseList.length === 0) return 0;
+    return expenseList.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+  }, []);
+
   // Update displayed expenses when current page or expenses change
   useEffect(() => {
-    updateDisplayedExpenses();
+    if (expenses.length > 0) {
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedExpenses = expenses.slice(startIndex, endIndex);
+      
+      setDisplayedExpenses(paginatedExpenses);
+      setTotalPages(Math.ceil(expenses.length / itemsPerPage));
+    } else {
+      setDisplayedExpenses([]);
+      setTotalPages(1);
+    }
   }, [expenses, currentPage, itemsPerPage]);
 
-  // Update displayed expenses based on pagination
-  const updateDisplayedExpenses = () => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedExpenses = expenses.slice(startIndex, endIndex);
-    
-    setDisplayedExpenses(paginatedExpenses);
-    setTotalPages(Math.ceil(expenses.length / itemsPerPage));
-    
-    // Calculate total amount for all expenses (not just displayed ones)
-    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  // Update total amount when allExpenses changes
+  useEffect(() => {
+    const total = calculateTotalAmount(allExpenses);
     setTotalAmount(total);
-  };
+    setTotalCount(allExpenses.length);
+  }, [allExpenses, calculateTotalAmount]);
 
   // Handle page change
   const handlePageChange = (pageNumber) => {
@@ -94,8 +105,40 @@ const Dashboard = () => {
         params.mode_of_payment = filterParams.mode_of_payment;
       }
 
-      const response = await api.get('/api/expenses', { params });
-      setExpenses(response.data.data);
+      // First fetch all expenses for calculation (without pagination)
+      const allExpensesResponse = await api.get('/api/expenses', { 
+        params: {
+          ...params,
+          limit: 1000 // Set a high limit to get all expenses
+        }
+      });
+
+      // Process all expenses for calculation
+      const processedAllExpenses = allExpensesResponse.data.data.map(expense => ({
+        ...expense,
+        amount: typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount) || 0
+      }));
+      
+      setAllExpenses(processedAllExpenses);
+      
+      // Then fetch paginated expenses for display
+      const response = await api.get('/api/expenses', { 
+        params: {
+          ...params,
+          page: 1,
+          limit: itemsPerPage
+        }
+      });
+      
+      const expensesData = response.data.data;
+      
+      // Ensure amount is a number for each expense
+      const processedExpenses = expensesData.map(expense => ({
+        ...expense,
+        amount: typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount) || 0
+      }));
+      
+      setExpenses(processedExpenses);
       setCurrentPage(1); // Reset to first page when filters change
       setError('');
     } catch (error) {
@@ -112,13 +155,9 @@ const Dashboard = () => {
       try {
         await api.delete(`/api/expenses/${id}`);
         
-        // Update the expenses list after deletion
+        // Update both expense lists after deletion
         setExpenses(expenses.filter(expense => expense._id !== id));
-        
-        // If the current page becomes empty (except for the first page), go to the previous page
-        if (currentPage > 1 && displayedExpenses.length === 1) {
-          setCurrentPage(currentPage - 1);
-        }
+        setAllExpenses(allExpenses.filter(expense => expense._id !== id));
         
         toast.success('Expense deleted successfully');
       } catch (error) {
@@ -238,8 +277,8 @@ const Dashboard = () => {
     <Container className="dashboard-container py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>My Expenses</h2>
-        <Button as={Link} to="/add-expense" variant="primary">
-          <FaPlus className="me-2" /> Add New Expense
+        <Button as={Link} to="/add-expense" variant="primary" className="d-flex align-items-center">
+          <FaPlus className="me-2" /> <span className="d-none d-sm-inline">Add New Expense</span>
         </Button>
       </div>
 
@@ -256,7 +295,7 @@ const Dashboard = () => {
         </div>
       ) : error ? (
         <Alert variant="danger">{error}</Alert>
-      ) : expenses.length === 0 ? (
+      ) : allExpenses.length === 0 ? (
         <Alert variant="info">
           No expenses found for the selected period. Try changing your filters or add a new expense!
         </Alert>
@@ -275,7 +314,7 @@ const Dashboard = () => {
                 <Col md={6} className="text-md-end">
                   <div className="d-flex flex-column">
                     <span className="text-muted">Number of Expenses</span>
-                    <h3>{expenses.length}</h3>
+                    <h3>{totalCount}</h3>
                   </div>
                 </Col>
               </Row>
@@ -284,7 +323,7 @@ const Dashboard = () => {
 
           <div className="mb-3">
             <p className="text-muted">
-              Showing {displayedExpenses.length} of {expenses.length} expenses
+              Showing {displayedExpenses.length} of {totalCount} expenses
               {currentPage > 1 && ` (Page ${currentPage} of ${totalPages})`}
             </p>
           </div>
