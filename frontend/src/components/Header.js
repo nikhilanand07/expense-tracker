@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import CurrencySelector from './CurrencySelector';
 import ThemeToggle from './ThemeToggle';
-import { FaChartPie, FaRobot, FaBrain, FaLightbulb, FaHome, FaUsers } from 'react-icons/fa';
+import { FaBrain, FaHome, FaUsers } from 'react-icons/fa';
 
 const Header = () => {
   const { user, logout } = useAuth();

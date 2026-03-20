@@ -61,6 +61,7 @@ const InsightsPage = () => {
   // Fetch expenses when time period changes
   useEffect(() => {
     fetchExpenses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timePeriod]);
 
   // Handle time period change

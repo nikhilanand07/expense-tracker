@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Button, Alert, Spinner, Pagination, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -41,6 +41,7 @@ const Dashboard = () => {
     if (filters.startDate !== undefined) { // Only fetch if filters are initialized
       fetchPagedExpenses(1, filters);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.startDate, filters.endDate, filters.category, filters.mode_of_payment]); // Re-fetch when filters change
 
   // Handle page change
