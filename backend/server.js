@@ -7,29 +7,28 @@ const mongoose = require('mongoose');
 // Import routes
 const userRoutes = require('./routes/userRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
+const groupRoutes = require('./routes/groupRoutes');
+const billRoutes = require('./routes/billRoutes');
 
 // Initialize express app
 const app = express();
 const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Configure CORS based on environment
-const corsOptions = {
-  origin: NODE_ENV === 'production' 
-    ? '*' // Allow all origins for initial testing
-    /* Once your frontend is deployed, replace the wildcard with your actual domains:
-    [
-      'https://your-frontend-domain.netlify.app',
-      'https://your-app-name.vercel.app'
-    ]
-    */
-    : ['http://localhost:3000', 'http://192.168.1.3:3000', 'http://localhost:19006'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-};
-
-app.use(cors(corsOptions));
+// CORS middleware - apply before any route definitions
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  
+  next();
+});
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
@@ -46,6 +45,8 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/bills', billRoutes);
 
 // Default route
 app.get('/', (req, res) => {

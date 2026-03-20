@@ -3,7 +3,12 @@ import config from '../config';
 
 // Create an axios instance with the base URL from config
 const api = axios.create({
-  baseURL: config.apiUrl
+  baseURL: config.apiUrl,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  withCredentials: false // Changed to false to avoid CORS preflight issues
 });
 
 // Add a request interceptor for authentication
@@ -28,6 +33,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error('API Error:', error);
+    
     // Handle common errors here
     if (error.response && error.response.status === 401) {
       // Unauthorized - clear token and redirect to login

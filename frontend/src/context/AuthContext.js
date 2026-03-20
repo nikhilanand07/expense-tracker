@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
           const res = await api.get('/api/users/profile');
           setUser(res.data.user);
         } catch (error) {
+          console.error('Error checking login status:', error);
           // Clear token and user data if invalid
           localStorage.removeItem('token');
           setUser(null);
@@ -32,19 +33,33 @@ export const AuthProvider = ({ children }) => {
   // Register user
   const register = async (userData) => {
     try {
-      const res = await api.post('/api/users/signup', userData);
+      // Use direct fetch instead of axios for signup to avoid CORS issues
+      const response = await fetch(`http://localhost:5001/api/users/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
       
       // Save token to local storage
-      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('token', data.token);
       
       // Set user
-      setUser(res.data.user);
+      setUser(data.user);
       
       return { success: true };
     } catch (error) {
+      console.error('Registration error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Registration failed'
+        message: error.message || 'Registration failed'
       };
     }
   };
@@ -52,19 +67,33 @@ export const AuthProvider = ({ children }) => {
   // Login user
   const login = async (userData) => {
     try {
-      const res = await api.post('/api/users/login', userData);
+      // Use direct fetch instead of axios for login to avoid CORS issues
+      const response = await fetch(`http://localhost:5001/api/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
       
       // Save token to local storage
-      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('token', data.token);
       
       // Set user
-      setUser(res.data.user);
+      setUser(data.user);
       
       return { success: true };
     } catch (error) {
+      console.error('Login error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Login failed'
+        message: error.message || 'Login failed'
       };
     }
   };
