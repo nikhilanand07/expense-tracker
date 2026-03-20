@@ -1,0 +1,504 @@
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Card, Button, Spinner, Alert, Tab, Nav, Badge, ListGroup, Modal, Form } from 'react-bootstrap';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useGroups } from '../context/GroupContext';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { FaUsers, FaArrowLeft, FaPlus, FaUserPlus, FaReceipt, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
+
+const GroupDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { darkMode } = useTheme();
+  const { 
+    groups, 
+    bills, 
+    loading, 
+    error, 
+    fetchGroups, 
+    fetchGroupBills, 
+    addMember, 
+    removeMember,
+    markShareAsPaid
+  } = useGroups();
+  
+  const [activeTab, setActiveTab] = useState('details');
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [memberEmail, setMemberEmail] = useState('');
+  const [addingMember, setAddingMember] = useState(false);
+  const [addMemberError, setAddMemberError] = useState(null);
+  const [removingMember, setRemovingMember] = useState(null);
+  const [markingPaid, setMarkingPaid] = useState(null);
+  
+  // Find the current group from the groups array
+  const group = groups.find(g => g._id === id);
+  
+  useEffect(() => {
+    if (id) {
+      fetchGroups();
+      fetchGroupBills(id);
+    }
+  }, [id, fetchGroups, fetchGroupBills]);
+  
+  const handleAddMember = async (e) => {
+    e.preventDefault();
+    setAddingMember(true);
+    setAddMemberError(null);
+    
+    try {
+      await addMember(id, memberEmail);
+      setMemberEmail('');
+      setShowAddMemberModal(false);
+    } catch (err) {
+      setAddMemberError(err.message || 'Failed to add member');
+    } finally {
+      setAddingMember(false);
+    }
+  };
+  
+  const handleRemoveMember = async (userId) => {
+    setRemovingMember(userId);
+    
+    try {
+      await removeMember(id, userId);
+    } catch (err) {
+      console.error('Failed to remove member:', err);
+    } finally {
+      setRemovingMember(null);
+    }
+  };
+  
+  const handleMarkAsPaid = async (billId, shareId) => {
+    setMarkingPaid(`${billId}-${shareId}`);
+    
+    try {
+      await markShareAsPaid(billId, shareId);
+    } catch (err) {
+      console.error('Failed to mark share as paid:', err);
+    } finally {
+      setMarkingPaid(null);
+    }
+  };
+  
+  // Determine current user ID securely (handles both _id and id)
+  const currentUserId = user ? (user._id || user.id) : null;
+
+  // Calculate balances
+  let youOwe = 0;
+  let owedToYou = 0;
+  
+  if (currentUserId && bills && bills.length > 0) {
+    bills.forEach(bill => {
+      const isPayer = bill.paidBy._id === currentUserId;
+      
+      bill.shares.forEach(share => {
+        if (!share.paid) {
+          if (isPayer && share.user._id !== currentUserId) {
+            owedToYou += share.amount;
+          } else if (!isPayer && share.user._id === currentUserId) {
+            youOwe += share.amount;
+          }
+        }
+      });
+    });
+  }
+  
+  // Check if the current user is the creator of the group
+  const isCreator = group && currentUserId && group.creator === currentUserId;
+  
+  if (loading && !group) {
+    return (
+      <Container className="py-5 text-center">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </Container>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Container className="py-4">
+        <Alert variant="danger">{error}</Alert>
+        <Button 
+          variant={darkMode ? "outline-light" : "outline-secondary"} 
+          onClick={() => navigate('/groups')}
+        >
+          <FaArrowLeft className="me-1" /> Back to Groups
+        </Button>
+      </Container>
+    );
+  }
+  
+  if (!group) {
+    return (
+      <Container className="py-4">
+        <Alert variant="warning">Group not found</Alert>
+        <Button 
+          variant={darkMode ? "outline-light" : "outline-secondary"} 
+          onClick={() => navigate('/groups')}
+        >
+          <FaArrowLeft className="me-1" /> Back to Groups
+        </Button>
+      </Container>
+    );
+  }
+  
+  return (
+    <Container className="py-4">
+      <Row className="mb-4">
+        <Col>
+          <Button 
+            variant={darkMode ? "outline-light" : "outline-secondary"} 
+            className="mb-3"
+            onClick={() => navigate('/groups')}
+          >
+            <FaArrowLeft className="me-1" /> Back to Groups
+          </Button>
+          <h1>
+            <FaUsers className="me-2" />
+            {group.name}
+          </h1>
+          {group.description && (
+            <p className="text-muted">{group.description}</p>
+          )}
+        </Col>
+        <Col xs="auto" className="d-flex align-items-start">
+          <Button 
+            as={Link} 
+            to={`/groups/${id}/create-bill`} 
+            variant="primary"
+            className="d-flex align-items-center"
+          >
+            <FaPlus className="me-1" /> Add Bill
+          </Button>
+        </Col>
+      </Row>
+      
+      <Row className="mb-4">
+        <Col md={6} className="mb-3 mb-md-0">
+          <Card className={`shadow-sm ${darkMode ? 'bg-danger text-light' : 'bg-danger text-white'}`} style={{ opacity: 0.9 }}>
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 className="mb-0 text-white-50">You Owe</h6>
+                  <h3 className="mb-0 text-white">${youOwe.toFixed(2)}</h3>
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={6}>
+          <Card className={`shadow-sm ${darkMode ? 'bg-success text-light' : 'bg-success text-white'}`} style={{ opacity: 0.9 }}>
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 className="mb-0 text-white-50">Others Owe You</h6>
+                  <h3 className="mb-0 text-white">${owedToYou.toFixed(2)}</h3>
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+      
+      <Tab.Container activeKey={activeTab} onSelect={setActiveTab}>
+        <Row>
+          <Col sm={12}>
+            <Nav variant="tabs" className="mb-4">
+              <Nav.Item>
+                <Nav.Link 
+                  eventKey="details" 
+                  className={darkMode ? (activeTab === 'details' ? 'bg-dark text-white border-secondary border-bottom-0' : 'text-light') : ''}
+                >
+                  Group Details
+                </Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link 
+                  eventKey="bills" 
+                  className={darkMode ? (activeTab === 'bills' ? 'bg-dark text-white border-secondary border-bottom-0' : 'text-light') : ''}
+                >
+                  Bills
+                </Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link 
+                  eventKey="members" 
+                  className={darkMode ? (activeTab === 'members' ? 'bg-dark text-white border-secondary border-bottom-0' : 'text-light') : ''}
+                >
+                  Members <Badge bg="info" pill>{group.members.length}</Badge>
+                </Nav.Link>
+              </Nav.Item>
+            </Nav>
+          </Col>
+        </Row>
+        
+        <Tab.Content>
+          <Tab.Pane eventKey="details">
+            <Row>
+              <Col md={6}>
+                <Card className={`shadow-sm ${darkMode ? 'bg-dark text-white' : ''}`}>
+                  <Card.Body>
+                    <h5>Group Information</h5>
+                    <ListGroup variant={darkMode ? 'dark' : 'flush'}>
+                      <ListGroup.Item className={darkMode ? 'bg-dark text-white border-secondary' : ''}>
+                        <strong>Created:</strong> {new Date(group.createdAt).toLocaleDateString()}
+                      </ListGroup.Item>
+                      <ListGroup.Item className={darkMode ? 'bg-dark text-white border-secondary' : ''}>
+                        <strong>Members:</strong> {group.members.length}
+                      </ListGroup.Item>
+                      <ListGroup.Item className={darkMode ? 'bg-dark text-white border-secondary' : ''}>
+                        <strong>Total Bills:</strong> {bills.length}
+                      </ListGroup.Item>
+                    </ListGroup>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={6} className="mt-4 mt-md-0">
+                <Card className={`shadow-sm ${darkMode ? 'bg-dark text-white' : ''}`}>
+                  <Card.Body>
+                    <h5>Quick Actions</h5>
+                    <div className="d-grid gap-2">
+                      <Button 
+                        as={Link} 
+                        to={`/groups/${id}/create-bill`} 
+                        variant="primary"
+                        className="d-flex align-items-center justify-content-center"
+                      >
+                        <FaPlus className="me-1" /> Add New Bill
+                      </Button>
+                      <Button 
+                        variant="outline-primary"
+                        className="d-flex align-items-center justify-content-center"
+                        onClick={() => setShowAddMemberModal(true)}
+                      >
+                        <FaUserPlus className="me-1" /> Add Member
+                      </Button>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+          </Tab.Pane>
+          
+          <Tab.Pane eventKey="bills">
+            {bills.length === 0 ? (
+              <Card className={`shadow-sm ${darkMode ? 'bg-dark text-white' : ''}`}>
+                <Card.Body className="text-center py-5">
+                  <FaReceipt size={48} className="mb-3 text-muted" />
+                  <h3>No Bills Yet</h3>
+                  <p className="text-muted">
+                    Add a bill to start splitting expenses with group members.
+                  </p>
+                  <Button 
+                    as={Link} 
+                    to={`/groups/${id}/create-bill`} 
+                    variant="primary"
+                    className="mt-2"
+                  >
+                    <FaPlus className="me-1" /> Add First Bill
+                  </Button>
+                </Card.Body>
+              </Card>
+            ) : (
+              <div className="bills-list">
+                {bills.map(bill => (
+                  <Card key={bill._id} className={`mb-3 shadow-sm ${darkMode ? 'bg-dark text-white' : ''}`}>
+                    <Card.Header className={`d-flex justify-content-between align-items-center ${darkMode ? 'bg-dark border-secondary' : ''}`}>
+                      <h5 className="mb-0">{bill.title}</h5>
+                      <Badge bg="primary" pill>
+                        {bill.splitType === 'equal' ? 'Equal Split' : 'Custom Split'}
+                      </Badge>
+                    </Card.Header>
+                    <Card.Body>
+                      <Row>
+                        <Col md={6}>
+                          <p className="mb-1">
+                            <strong>Amount:</strong> ${bill.amount.toFixed(2)}
+                          </p>
+                          <p className="mb-1">
+                            <strong>Category:</strong> {bill.category}
+                          </p>
+                          <p className="mb-1">
+                            <strong>Date:</strong> {new Date(bill.date).toLocaleDateString()}
+                          </p>
+                          <p className="mb-1">
+                            <strong>Paid By:</strong> {bill.paidBy.first_name} {bill.paidBy.last_name}
+                          </p>
+                          {bill.description && (
+                            <p className="mb-1">
+                              <strong>Description:</strong> {bill.description}
+                            </p>
+                          )}
+                        </Col>
+                        <Col md={6}>
+                          <h6>Shares</h6>
+                          <ListGroup variant={darkMode ? 'dark' : 'flush'}>
+                            {bill.shares.map(share => (
+                              <ListGroup.Item 
+                                key={share._id} 
+                                className={`d-flex justify-content-between align-items-center ${darkMode ? 'bg-dark text-white border-secondary' : ''}`}
+                              >
+                                <div>
+                                  {share.user.first_name} {share.user.last_name}
+                                  <span className="ms-2 text-muted small">
+                                    (${share.amount.toFixed(2)})
+                                  </span>
+                                </div>
+                                {share.paid ? (
+                                  <Badge bg="success" pill>Paid</Badge>
+                                ) : share.user._id === currentUserId ? (
+                                  <Badge bg="warning" text="dark" pill>You Owe</Badge>
+                                ) : bill.paidBy._id === currentUserId ? (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline-success"
+                                    disabled={markingPaid === `${bill._id}-${share._id}`}
+                                    onClick={() => handleMarkAsPaid(bill._id, share._id)}
+                                  >
+                                    {markingPaid === `${bill._id}-${share._id}` ? (
+                                      <Spinner animation="border" size="sm" />
+                                    ) : (
+                                      <>
+                                        <FaCheck className="me-1" /> Mark Paid
+                                      </>
+                                    )}
+                                  </Button>
+                                ) : (
+                                  <Badge bg="danger" pill>Unpaid</Badge>
+                                )}
+                              </ListGroup.Item>
+                            ))}
+                          </ListGroup>
+                        </Col>
+                      </Row>
+                    </Card.Body>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </Tab.Pane>
+          
+          <Tab.Pane eventKey="members">
+            <Card className={`shadow-sm ${darkMode ? 'bg-dark text-white' : ''}`}>
+              <Card.Header className={`d-flex justify-content-between align-items-center ${darkMode ? 'bg-dark border-secondary' : ''}`}>
+                <h5 className="mb-0">Group Members</h5>
+                <Button 
+                  variant="outline-primary" 
+                  size="sm"
+                  onClick={() => setShowAddMemberModal(true)}
+                >
+                  <FaUserPlus className="me-1" /> Add Member
+                </Button>
+              </Card.Header>
+              <ListGroup variant={darkMode ? 'dark' : 'flush'}>
+                {group.members.map(member => (
+                  <ListGroup.Item 
+                    key={member._id} 
+                    className={`d-flex justify-content-between align-items-center ${darkMode ? 'bg-dark text-white border-secondary' : ''}`}
+                  >
+                    <div>
+                      {member.first_name} {member.last_name}
+                      <span className="ms-2 text-muted small">
+                        ({member.email})
+                      </span>
+                      {member._id === currentUserId && (
+                        <Badge bg="info" className="ms-2" pill>You</Badge>
+                      )}
+                      {group.creator === member._id && (
+                        <Badge bg="primary" className="ms-2" pill>Creator</Badge>
+                      )}
+                    </div>
+                    {isCreator && member._id !== currentUserId && (
+                      <Button 
+                        variant="outline-danger" 
+                        size="sm"
+                        disabled={removingMember === member._id}
+                        onClick={() => handleRemoveMember(member._id)}
+                      >
+                        {removingMember === member._id ? (
+                          <Spinner animation="border" size="sm" />
+                        ) : (
+                          <>
+                            <FaTimes className="me-1" /> Remove
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </Card>
+          </Tab.Pane>
+        </Tab.Content>
+      </Tab.Container>
+      
+      {/* Add Member Modal */}
+      <Modal 
+        show={showAddMemberModal} 
+        onHide={() => {
+          setShowAddMemberModal(false);
+          setAddMemberError(null);
+          setMemberEmail('');
+        }}
+        centered
+        className={darkMode ? 'dark-modal' : ''}
+      >
+        <Modal.Header closeButton className={darkMode ? 'bg-dark text-white border-secondary' : ''}>
+          <Modal.Title>Add Member to Group</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={darkMode ? 'bg-dark text-white' : ''}>
+          {addMemberError && (
+            <Alert variant="danger">{addMemberError}</Alert>
+          )}
+          <Form onSubmit={handleAddMember}>
+            <Form.Group className="mb-3">
+              <Form.Label>Member Email</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Enter email address"
+                value={memberEmail}
+                onChange={(e) => setMemberEmail(e.target.value)}
+                required
+                className={darkMode ? 'bg-dark text-white border-secondary' : ''}
+              />
+              <Form.Text className={darkMode ? 'text-light' : 'text-muted'}>
+                The user must have an account in the system.
+              </Form.Text>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer className={darkMode ? 'bg-dark text-white border-secondary' : ''}>
+          <Button 
+            variant="secondary" 
+            onClick={() => {
+              setShowAddMemberModal(false);
+              setAddMemberError(null);
+              setMemberEmail('');
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={handleAddMember}
+            disabled={addingMember || !memberEmail}
+          >
+            {addingMember ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-1" />
+                Adding...
+              </>
+            ) : (
+              'Add Member'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </Container>
+  );
+};
+
+export default GroupDetail;

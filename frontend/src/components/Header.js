@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import CurrencySelector from './CurrencySelector';
 import ThemeToggle from './ThemeToggle';
-import { FaChartPie, FaRobot, FaBrain, FaLightbulb, FaHome } from 'react-icons/fa';
+import { FaChartPie, FaRobot, FaBrain, FaLightbulb, FaHome, FaUsers } from 'react-icons/fa';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -53,6 +53,11 @@ const Header = () => {
               <>
                 <Nav.Link as={Link} to="/dashboard" className="my-2 my-lg-0" onClick={() => setExpanded(false)}>
                   Dashboard
+                </Nav.Link>
+                
+                {/* Groups Link */}
+                <Nav.Link as={Link} to="/groups" className="my-2 my-lg-0" onClick={() => setExpanded(false)}>
+                  <FaUsers className="me-1" /> Groups
                 </Nav.Link>
                 
                 {/* Enhanced AI-themed Insights Link */}

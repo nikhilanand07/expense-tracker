@@ -1,4 +1,5 @@
 const Expense = require('../models/Expense');
+const mongoose = require('mongoose');
 
 // @desc    Create a new expense
 // @route   POST /api/expenses
@@ -31,7 +32,7 @@ exports.getExpenses = async (req, res) => {
     const { startDate, endDate, category, mode_of_payment, search, page = 1, limit = 10 } = req.query;
     
     // Build query
-    const query = { user: req.user.id };
+    const query = { user: new mongoose.Types.ObjectId(req.user.id) };
     
     // Add date range filter if provided
     if (startDate && endDate) {
@@ -74,9 +75,17 @@ exports.getExpenses = async (req, res) => {
     // Get total count for pagination
     const total = await Expense.countDocuments(query);
     
+    // Get total amount for the filtered query
+    const amountAggregation = await Expense.aggregate([
+      { $match: query },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const totalAmount = amountAggregation.length > 0 ? amountAggregation[0].total : 0;
+    
     res.status(200).json({
       success: true,
       count: total,
+      totalAmount: totalAmount,
       data: expenses,
       pagination: {
         page: parseInt(page),
