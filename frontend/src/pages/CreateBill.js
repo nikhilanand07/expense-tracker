@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Card, Spinner, Alert, ListGroup, InputGroup, Badge } from 'react-bootstrap';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useGroups } from '../context/GroupContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { FaReceipt, FaArrowLeft, FaUsers, FaEquals, FaUserEdit } from 'react-icons/fa';
+import { FaReceipt, FaArrowLeft, FaEquals, FaUserEdit } from 'react-icons/fa';
 
 const CreateBill = () => {
   const { id: groupId } = useParams();

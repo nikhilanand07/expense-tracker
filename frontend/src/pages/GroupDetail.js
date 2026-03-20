@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useGroups } from '../context/GroupContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { FaUsers, FaArrowLeft, FaPlus, FaUserPlus, FaReceipt, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
+import { FaUsers, FaArrowLeft, FaPlus, FaUserPlus, FaReceipt, FaCheck, FaTimes } from 'react-icons/fa';
 
 const GroupDetail = () => {
   const { id } = useParams();

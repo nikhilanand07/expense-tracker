@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Form, Row, Col, Button, Card } from 'react-bootstrap';
+import { Form, Row, Col, Button } from 'react-bootstrap';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { FaFilter, FaTimes } from 'react-icons/fa';
@@ -45,7 +45,7 @@ const ExpenseFilter = ({ filters, setFilters, onFilter }) => {
   ];
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [activeFilters, setActiveFilters] = useState(0);
+  const [activeFilters] = useState(0);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   // Handle window resize

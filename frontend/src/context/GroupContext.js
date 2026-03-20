@@ -360,7 +360,7 @@ export const GroupProvider = ({ children }) => {
     if (token) {
       fetchGroups();
     }
-  }, [token]);
+  }, [token, fetchGroups]);
 
   const value = {
     user,
