@@ -3,8 +3,10 @@ import { Form, Row, Col, Button } from 'react-bootstrap';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { FaFilter, FaTimes } from 'react-icons/fa';
+import { useTheme } from '../context/ThemeContext';
 
 const ExpenseFilter = ({ filters, setFilters, onFilter }) => {
+  const { darkMode } = useTheme();
   // Category options
   const categories = [
     'All',
@@ -183,7 +185,7 @@ const ExpenseFilter = ({ filters, setFilters, onFilter }) => {
       {isMobile && (
         <div className="mb-3">
           <Button 
-            variant="outline-primary" 
+            variant={darkMode ? "outline-light" : "outline-primary"} 
             className="w-100 d-flex justify-content-between align-items-center"
             onClick={toggleFilter}
           >
