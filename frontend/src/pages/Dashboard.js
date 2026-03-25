@@ -247,8 +247,8 @@ const Dashboard = () => {
     <Container className="dashboard-container py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>My Expenses</h2>
-        <Button as={Link} to="/add-expense" variant="primary" className="d-flex align-items-center">
-          <FaPlus className="me-2" /> <span className="d-none d-sm-inline">Add New Expense</span>
+        <Button as={Link} to="/add-expense" variant="primary" className="d-flex align-items-center justify-content-center">
+          <FaPlus className="me-sm-2" /> <span className="d-none d-sm-inline">Add New Expense</span>
         </Button>
       </div>
 

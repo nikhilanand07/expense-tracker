@@ -5,6 +5,7 @@ import { useGroups } from '../context/GroupContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { FaReceipt, FaArrowLeft, FaEquals, FaUserEdit } from 'react-icons/fa';
+import { formatAmount, getCurrencySymbol } from '../utils/currencyUtils';
 
 const CreateBill = () => {
   const { id: groupId } = useParams();
@@ -196,7 +197,7 @@ const CreateBill = () => {
                     <Form.Group className="mb-3">
                       <Form.Label>Amount*</Form.Label>
                       <InputGroup>
-                        <InputGroup.Text className={darkMode ? 'bg-dark text-white border-secondary' : ''}>$</InputGroup.Text>
+                        <InputGroup.Text className={darkMode ? 'bg-dark text-white border-secondary' : ''}>{getCurrencySymbol(user?.currency)}</InputGroup.Text>
                         <Form.Control
                           type="number"
                           step="0.01"
@@ -329,7 +330,7 @@ const CreateBill = () => {
                             className="ms-2"
                             pill
                           >
-                            {remainingAmount < 0 ? 'Over-allocated' : 'Under-allocated'}: ${Math.abs(remainingAmount).toFixed(2)}
+                            {remainingAmount < 0 ? 'Over-allocated' : 'Under-allocated'}: {formatAmount(Math.abs(remainingAmount), user?.currency)}
                           </Badge>
                         )}
                       </div>
@@ -350,10 +351,10 @@ const CreateBill = () => {
                             )}
                           </div>
                           {formData.splitType === 'equal' ? (
-                            <div>${share.amount.toFixed(2)}</div>
+                            <div>{formatAmount(share.amount, user?.currency)}</div>
                           ) : (
                             <InputGroup className="w-auto">
-                              <InputGroup.Text className={darkMode ? 'bg-dark text-white border-secondary' : ''}>$</InputGroup.Text>
+                              <InputGroup.Text className={darkMode ? 'bg-dark text-white border-secondary' : ''}>{getCurrencySymbol(user?.currency)}</InputGroup.Text>
                               <Form.Control
                                 type="number"
                                 step="0.01"

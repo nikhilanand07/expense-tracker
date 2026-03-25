@@ -5,6 +5,7 @@ import { useGroups } from '../context/GroupContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { FaUsers, FaArrowLeft, FaPlus, FaUserPlus, FaReceipt, FaCheck, FaTimes } from 'react-icons/fa';
+import { formatAmount } from '../utils/currencyUtils';
 
 const GroupDetail = () => {
   const { id } = useParams();
@@ -183,7 +184,7 @@ const GroupDetail = () => {
               <div className="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 className="mb-0 text-white-50">You Owe</h6>
-                  <h3 className="mb-0 text-white">${youOwe.toFixed(2)}</h3>
+                  <h3 className="mb-0 text-white">{formatAmount(youOwe, user?.currency)}</h3>
                 </div>
               </div>
             </Card.Body>
@@ -195,7 +196,7 @@ const GroupDetail = () => {
               <div className="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 className="mb-0 text-white-50">Others Owe You</h6>
-                  <h3 className="mb-0 text-white">${owedToYou.toFixed(2)}</h3>
+                  <h3 className="mb-0 text-white">{formatAmount(owedToYou, user?.currency)}</h3>
                 </div>
               </div>
             </Card.Body>
@@ -316,7 +317,7 @@ const GroupDetail = () => {
                       <Row>
                         <Col md={6}>
                           <p className="mb-1">
-                            <strong>Amount:</strong> ${bill.amount.toFixed(2)}
+                            <strong>Amount:</strong> {formatAmount(bill.amount, user?.currency)}
                           </p>
                           <p className="mb-1">
                             <strong>Category:</strong> {bill.category}
@@ -344,7 +345,7 @@ const GroupDetail = () => {
                                 <div>
                                   {share.user.first_name} {share.user.last_name}
                                   <span className="ms-2 text-muted small">
-                                    (${share.amount.toFixed(2)})
+                                    ({formatAmount(share.amount, user?.currency)})
                                   </span>
                                 </div>
                                 {share.paid ? (
