@@ -42,7 +42,7 @@ const CreateBill = () => {
     if (user) {
       setFormData(prev => ({
         ...prev,
-        paidBy: user._id
+        paidBy: user._id || user.id
       }));
     }
   }, [user]);

@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useGroups } from '../context/GroupContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { FaUsers, FaArrowLeft, FaPlus, FaUserPlus, FaReceipt, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaUsers, FaArrowLeft, FaPlus, FaUserPlus, FaReceipt, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
 import { formatAmount } from '../utils/currencyUtils';
 
 const GroupDetail = () => {
@@ -490,7 +490,7 @@ const GroupDetail = () => {
                 {group.members.map(member => (
                   <ListGroup.Item 
                     key={member._id} 
-                    className={`d-flex justify-content-between align-items-center ${darkMode ? 'bg-dark text-white border-secondary' : ''}`}
+                    className={`d-flex flex-wrap justify-content-between align-items-center gap-2 ${darkMode ? 'bg-dark text-white border-secondary' : ''}`}
                   >
                     <div>
                       {member.first_name} {member.last_name}
@@ -538,15 +538,13 @@ const GroupDetail = () => {
                             size="sm"
                             disabled={removingMember === member._id || hasUnsettledBills(member._id)}
                             onClick={() => confirmRemoveMember(member)}
-                            className={hasUnsettledBills(member._id) ? "opacity-50 ms-2" : "ms-2"}
+                            className={hasUnsettledBills(member._id) ? "opacity-50" : ""}
                             style={hasUnsettledBills(member._id) ? { pointerEvents: "none" } : {}}
                           >
                             {removingMember === member._id ? (
                               <Spinner animation="border" size="sm" />
                             ) : (
-                              <>
-                                <FaTimes className="me-1" /> Remove
-                              </>
+                              <FaTrash />
                             )}
                           </Button>
                         </div>
