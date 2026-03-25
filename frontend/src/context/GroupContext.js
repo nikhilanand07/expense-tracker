@@ -182,7 +182,6 @@ export const GroupProvider = ({ children }) => {
       return data.data;
     } catch (error) {
       console.error('Error adding member:', error);
-      setError(error.message);
       throw error;
     } finally {
       setLoading(false);
