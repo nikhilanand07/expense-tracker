@@ -22,20 +22,18 @@ const GroupsPage = () => {
 
   return (
     <Container className="py-4">
-      <Row className="mb-4 align-items-center">
-        <Col>
-          <h1 className="mb-0">
-            <FaUsers className="me-2" />
-            My Groups
-          </h1>
-          <p className="text-muted mt-2">
-            Create groups, split bills, and track shared expenses with friends.
-          </p>
-        </Col>
-        <Col xs="auto" className="d-flex">
+      {/* Header: stacks on mobile, side-by-side on desktop */}
+      <div className="mb-4">
+        <h1 className="mb-1">
+          <FaUsers className="me-2" />
+          My Groups
+        </h1>
+        <p className="text-muted mt-1 mb-3">
+          Create groups, split bills, and track shared expenses with friends.
+        </p>
+        <div className="d-flex gap-2">
           <Button 
             variant={darkMode ? "outline-light" : "outline-secondary"} 
-            className="me-2"
             onClick={handleRefresh}
             disabled={refreshing}
           >
@@ -48,13 +46,13 @@ const GroupsPage = () => {
           <Button 
             as={Link} 
             to="/groups/create" 
-            variant={darkMode ? "primary" : "primary"}
+            variant="primary"
             className="d-flex align-items-center"
           >
             <FaPlus className="me-1" /> New Group
           </Button>
-        </Col>
-      </Row>
+        </div>
+      </div>
 
       {error && (
         <Alert variant="danger" className="mb-4">
