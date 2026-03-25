@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Spinner, Container } from 'react-bootstrap';
 import { useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { GroupProvider } from './context/GroupContext';
@@ -22,7 +23,17 @@ import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+        <Spinner animation="border" variant="primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </Container>
+    );
+  }
 
   return (
     <ThemeProvider>
