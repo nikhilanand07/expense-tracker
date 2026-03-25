@@ -33,20 +33,8 @@ export const AuthProvider = ({ children }) => {
   // Register user
   const register = async (userData) => {
     try {
-      // Use direct fetch instead of axios for signup to avoid CORS issues
-      const response = await fetch(`http://localhost:5001/api/users/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData)
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
+      const res = await api.post('/api/users/signup', userData);
+      const data = res.data;
       
       // Save token to local storage
       localStorage.setItem('token', data.token);
@@ -59,7 +47,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Registration error:', error);
       return {
         success: false,
-        message: error.message || 'Registration failed'
+        message: error.response?.data?.message || error.message || 'Registration failed'
       };
     }
   };
@@ -67,20 +55,8 @@ export const AuthProvider = ({ children }) => {
   // Login user
   const login = async (userData) => {
     try {
-      // Use direct fetch instead of axios for login to avoid CORS issues
-      const response = await fetch(`http://localhost:5001/api/users/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData)
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+      const res = await api.post('/api/users/login', userData);
+      const data = res.data;
       
       // Save token to local storage
       localStorage.setItem('token', data.token);
@@ -93,7 +69,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Login error:', error);
       return {
         success: false,
-        message: error.message || 'Login failed'
+        message: error.response?.data?.message || error.message || 'Login failed'
       };
     }
   };
