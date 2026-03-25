@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Button, Alert, Spinner, Pagination, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -12,12 +12,17 @@ import api from '../services/api'; // Import the api service
 const Dashboard = () => {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState([]);
-  const [allExpenses, setAllExpenses] = useState([]); // Store all expenses for calculation
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Initialize with current month
+  const now = new Date();
+  const initialStartOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const initialEndOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
   const [filters, setFilters] = useState({
-    startDate: null,
-    endDate: null,
+    startDate: initialStartOfMonth,
+    endDate: initialEndOfDay,
     category: '',
     mode_of_payment: '',
     timePeriod: 'currentMonth' // Default to current month
@@ -31,33 +36,13 @@ const Dashboard = () => {
   const [totalAmount, setTotalAmount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
 
-  // Set initial time period (current month)
-  useEffect(() => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-    
-    setFilters(prev => ({
-      ...prev,
-      startDate: startOfMonth,
-      endDate: endOfDay
-    }));
-    
-    // Initial fetch will happen in the next useEffect when filters change
-  }, []);
-
   // Fetch expenses when filters change
   useEffect(() => {
     if (filters.startDate !== undefined) { // Only fetch if filters are initialized
-      fetchExpenses(filters);
+      fetchPagedExpenses(1, filters);
     }
-  }, [filters.startDate, filters.endDate]); // Re-fetch when date filters change
-
-  // Calculate total amount - separate from pagination
-  const calculateTotalAmount = useCallback((expenseList) => {
-    if (!expenseList || expenseList.length === 0) return 0;
-    return expenseList.reduce((sum, expense) => sum + (expense.amount || 0), 0);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.startDate, filters.endDate, filters.category, filters.mode_of_payment]); // Re-fetch when filters change
 
   // Handle page change
   const handlePageChange = (pageNumber) => {
@@ -66,22 +51,22 @@ const Dashboard = () => {
   };
 
   // Fetch a specific page of expenses
-  const fetchPagedExpenses = async (page = 1) => {
+  const fetchPagedExpenses = async (page = 1, currentFilters = filters) => {
     setLoading(true);
     try {
       // Build query parameters
       const params = {};
-      if (filters.startDate) {
-        params.startDate = filters.startDate.toISOString();
+      if (currentFilters.startDate) {
+        params.startDate = currentFilters.startDate.toISOString();
       }
-      if (filters.endDate) {
-        params.endDate = filters.endDate.toISOString();
+      if (currentFilters.endDate) {
+        params.endDate = currentFilters.endDate.toISOString();
       }
-      if (filters.category) {
-        params.category = filters.category;
+      if (currentFilters.category) {
+        params.category = currentFilters.category;
       }
-      if (filters.mode_of_payment) {
-        params.mode_of_payment = filters.mode_of_payment;
+      if (currentFilters.mode_of_payment) {
+        params.mode_of_payment = currentFilters.mode_of_payment;
       }
 
       // Fetch paginated expenses for display
@@ -104,11 +89,12 @@ const Dashboard = () => {
       setExpenses(processedExpenses);
       setDisplayedExpenses(processedExpenses);
       
-      // Update total pages from the API response
+      // Update total pages and total amount from the API response
       const totalItems = response.data.count;
       const calculatedTotalPages = Math.ceil(totalItems / itemsPerPage);
       setTotalPages(calculatedTotalPages);
       setTotalCount(totalItems);
+      setTotalAmount(response.data.totalAmount || 0);
       
       setError('');
     } catch (error) {
@@ -119,52 +105,10 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch expenses with calculation of total amount
-  const fetchExpenses = async (filterParams = {}) => {
-    setLoading(true);
-    try {
-      // Build query parameters
-      const params = {};
-      if (filterParams.startDate) {
-        params.startDate = filterParams.startDate.toISOString();
-      }
-      if (filterParams.endDate) {
-        params.endDate = filterParams.endDate.toISOString();
-      }
-      if (filterParams.category) {
-        params.category = filterParams.category;
-      }
-      if (filterParams.mode_of_payment) {
-        params.mode_of_payment = filterParams.mode_of_payment;
-      }
-
-      // First fetch all expenses for calculation (without pagination)
-      const allExpensesResponse = await api.get('/api/expenses', { 
-        params: {
-          ...params,
-          limit: 1000 // Set a high limit to get all expenses
-        }
-      });
-
-      // Process all expenses for calculation
-      const processedAllExpenses = allExpensesResponse.data.data.map(expense => ({
-        ...expense,
-        amount: typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount) || 0
-      }));
-      
-      setAllExpenses(processedAllExpenses);
-      
-      // Calculate total amount
-      const total = calculateTotalAmount(processedAllExpenses);
-      setTotalAmount(total);
-      
-      // Then fetch first page of expenses for display
-      await fetchPagedExpenses(1);
-    } catch (error) {
-      setError('Failed to fetch expenses. Please try again.');
-      console.error('Error fetching expenses:', error);
-      setLoading(false);
-    }
+  // Keep a wrapper for handleFilter
+  const fetchExpenses = (filterParams = {}) => {
+    setCurrentPage(1);
+    fetchPagedExpenses(1, filterParams);
   };
 
   // Delete expense
@@ -175,7 +119,7 @@ const Dashboard = () => {
         
         // Update both expense lists after deletion
         setExpenses(expenses.filter(expense => expense._id !== id));
-        setAllExpenses(allExpenses.filter(expense => expense._id !== id));
+
         
         // If the current page becomes empty (except for the first page), go to the previous page
         if (currentPage > 1 && displayedExpenses.length === 1) {
@@ -303,8 +247,8 @@ const Dashboard = () => {
     <Container className="dashboard-container py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>My Expenses</h2>
-        <Button as={Link} to="/add-expense" variant="primary" className="d-flex align-items-center">
-          <FaPlus className="me-2" /> <span className="d-none d-sm-inline">Add New Expense</span>
+        <Button as={Link} to="/add-expense" variant="primary" className="d-flex align-items-center justify-content-center">
+          <FaPlus className="me-sm-2" /> <span className="d-none d-sm-inline">Add New Expense</span>
         </Button>
       </div>
 
@@ -321,7 +265,7 @@ const Dashboard = () => {
         </div>
       ) : error ? (
         <Alert variant="danger">{error}</Alert>
-      ) : allExpenses.length === 0 ? (
+      ) : totalCount === 0 ? (
         <Alert variant="info">
           No expenses found for the selected period. Try changing your filters or add a new expense!
         </Alert>

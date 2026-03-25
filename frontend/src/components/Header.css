@@ -1,4 +1,4 @@
-/* Dashboard Icon Styling */
+/* ── Dashboard Icon ── */
 .dashboard-icon-container {
   position: relative;
   width: 40px;
@@ -37,40 +37,25 @@
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-.dashboard-icon {
-  font-size: 16px;
-}
+.dashboard-icon { font-size: 16px; }
+.dashboard-icon-container.light .dashboard-icon { color: #6a11cb; }
+.dashboard-icon-container.dark  .dashboard-icon { color: #ffffff; }
 
-.dashboard-icon-container.light .dashboard-icon {
-  color: #6a11cb;
-}
-
-.dashboard-icon-container.dark .dashboard-icon {
-  color: #ffffff;
-}
-
-/* Navbar styling enhancements */
+/* ── Navbar ── */
 .navbar {
   border-bottom: 1px solid;
   transition: all 0.3s ease;
 }
+.navbar.bg-light { border-bottom-color: #e0e0e0; }
+.navbar.bg-dark  { border-bottom-color: #333333; }
 
-.navbar.bg-light {
-  border-bottom-color: #e0e0e0;
-}
-
-.navbar.bg-dark {
-  border-bottom-color: #333333;
-}
-
-/* Button hover effects */
+/* ── Desktop nav hover effects ── */
 .btn-outline-dark:hover,
 .btn-outline-light:hover {
   transform: translateY(-1px);
   transition: all 0.2s ease;
 }
 
-/* Nav link hover effects */
 .nav-link {
   position: relative;
   transition: all 0.2s ease;
@@ -88,6 +73,149 @@
   transform: translateX(-50%);
 }
 
-.nav-link:hover::after {
-  width: 80%;
+.nav-link:hover::after { width: 80%; }
+
+/* ── Mobile Hamburger button ── */
+.sidebar-hamburger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  transition: background 0.2s;
 }
+.sidebar-hamburger:hover { background: rgba(128, 128, 128, 0.15); }
+
+/* ── Backdrop overlay ── */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1040;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.sidebar-backdrop.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Sidebar drawer ── */
+.mobile-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100dvh;
+  z-index: 1050;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  overflow-y: auto;
+}
+.mobile-sidebar.dark {
+  background: #1a1a2e;
+  color: #f0f0f0;
+}
+.mobile-sidebar.open {
+  transform: translateX(0);
+}
+
+/* Sidebar header (green bar like Cricbuzz) */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  flex-shrink: 0;
+}
+.sidebar-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+.sidebar-close {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.sidebar-close:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Sidebar body */
+.sidebar-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Individual sidebar item */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.12);
+  transition: background 0.15s;
+  background: none;
+  border-left: none;
+  border-top: none;
+  border-right: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.sidebar-item:hover {
+  background: rgba(106, 17, 203, 0.07);
+  color: #6a11cb;
+  text-decoration: none;
+}
+.mobile-sidebar.dark .sidebar-item { color: #f0f0f0; }
+.mobile-sidebar.dark .sidebar-item:hover { background: rgba(255,255,255,0.07); color: #c084fc; }
+
+/* Icon inside items */
+.sidebar-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+  color: #6a11cb;
+}
+.mobile-sidebar.dark .sidebar-icon { color: #c084fc; }
+
+/* Items with a right-side control (currency, theme) */
+.sidebar-item--control {
+  justify-content: flex-start;
+}
+.sidebar-item--control .sidebar-control-value {
+  margin-left: auto;
+}
+
+/* Logout item */
+.sidebar-item--logout {
+  color: #dc3545;
+  margin-top: auto;
+  border-bottom: none;
+}
+.sidebar-item--logout .sidebar-icon { color: #dc3545; }
+.sidebar-item--logout:hover { background: rgba(220, 53, 69, 0.07); color: #dc3545; }

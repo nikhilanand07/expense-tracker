@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
           const res = await api.get('/api/users/profile');
           setUser(res.data.user);
         } catch (error) {
+          console.error('Error checking login status:', error);
           // Clear token and user data if invalid
           localStorage.removeItem('token');
           setUser(null);
@@ -33,18 +34,20 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const res = await api.post('/api/users/signup', userData);
+      const data = res.data;
       
       // Save token to local storage
-      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('token', data.token);
       
       // Set user
-      setUser(res.data.user);
+      setUser(data.user);
       
       return { success: true };
     } catch (error) {
+      console.error('Registration error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Registration failed'
+        message: error.response?.data?.message || error.message || 'Registration failed'
       };
     }
   };
@@ -53,18 +56,20 @@ export const AuthProvider = ({ children }) => {
   const login = async (userData) => {
     try {
       const res = await api.post('/api/users/login', userData);
+      const data = res.data;
       
       // Save token to local storage
-      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('token', data.token);
       
       // Set user
-      setUser(res.data.user);
+      setUser(data.user);
       
       return { success: true };
     } catch (error) {
+      console.error('Login error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Login failed'
+        message: error.response?.data?.message || error.message || 'Login failed'
       };
     }
   };

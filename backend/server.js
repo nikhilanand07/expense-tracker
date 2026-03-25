@@ -7,29 +7,19 @@ const mongoose = require('mongoose');
 // Import routes
 const userRoutes = require('./routes/userRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
+const groupRoutes = require('./routes/groupRoutes');
+const billRoutes = require('./routes/billRoutes');
 
 // Initialize express app
 const app = express();
 const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Configure CORS based on environment
-const corsOptions = {
-  origin: NODE_ENV === 'production' 
-    ? '*' // Allow all origins for initial testing
-    /* Once your frontend is deployed, replace the wildcard with your actual domains:
-    [
-      'https://your-frontend-domain.netlify.app',
-      'https://your-app-name.vercel.app'
-    ]
-    */
-    : ['http://localhost:3000', 'http://192.168.1.3:3000', 'http://localhost:19006'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+// CORS middleware - apply before any route definitions
+app.use(cors({
+  origin: true, // Automatically reflect the request origin
   credentials: true
-};
-
-app.use(cors(corsOptions));
+}));
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
@@ -46,6 +36,8 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/bills', billRoutes);
 
 // Default route
 app.get('/', (req, res) => {

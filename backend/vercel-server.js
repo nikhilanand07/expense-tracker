@@ -8,6 +8,8 @@ const mongoose = require('mongoose');
 // Import routes
 const userRoutes = require('./routes/userRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
+const groupRoutes = require('./routes/groupRoutes');
+const billRoutes = require('./routes/billRoutes');
 
 // Initialize express app
 const app = express();
@@ -39,6 +41,8 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/bills', billRoutes);
 
 // Default route
 app.get('/', (req, res) => {
