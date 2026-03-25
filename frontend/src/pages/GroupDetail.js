@@ -31,6 +31,9 @@ const GroupDetail = () => {
   const [addMemberError, setAddMemberError] = useState(null);
   const [removingMember, setRemovingMember] = useState(null);
   const [markingPaid, setMarkingPaid] = useState(null);
+  const [filterMyBills, setFilterMyBills] = useState(false);
+  const [showRemoveMemberModal, setShowRemoveMemberModal] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null);
   
   // Find the current group from the groups array
   const group = groups.find(g => g._id === id);
@@ -81,28 +84,91 @@ const GroupDetail = () => {
       setMarkingPaid(null);
     }
   };
+
+  const handleBulkSettle = async (userId) => {
+    setMarkingPaid(`bulk-${userId}`);
+    
+    try {
+      for (const bill of bills) {
+        const isPayer = bill.paidBy._id === currentUserId;
+        const targetIsPayer = bill.paidBy._id === userId;
+        
+        if (isPayer || targetIsPayer) {
+          for (const share of bill.shares) {
+            if (!share.paid) {
+               const shareUserId = share.user._id || share.user;
+               if ((isPayer && shareUserId === userId) || (targetIsPayer && shareUserId === currentUserId)) {
+                 await markShareAsPaid(bill._id, share._id);
+               }
+            }
+          }
+        }
+      }
+      await fetchGroupBills(id);
+    } catch (err) {
+      console.error('Failed to settle up:', err);
+    } finally {
+      setMarkingPaid(null);
+    }
+  };
   
   // Determine current user ID securely (handles both _id and id)
   const currentUserId = user ? (user._id || user.id) : null;
+  
+  const hasUnsettledBills = (memberId) => {
+    return bills.some(bill => {
+      const payerId = bill.paidBy._id || bill.paidBy;
+      if (payerId === memberId) {
+        return bill.shares.some(share => !share.paid && (share.user._id || share.user) !== memberId);
+      }
+      return bill.shares.some(share => (share.user._id || share.user) === memberId && !share.paid);
+    });
+  };
+
+  const confirmRemoveMember = (member) => {
+    setMemberToRemove(member);
+    setShowRemoveMemberModal(true);
+  };
+  
+  const proceedRemoveMember = async () => {
+    if (!memberToRemove) return;
+    await handleRemoveMember(memberToRemove._id);
+    setShowRemoveMemberModal(false);
+    setMemberToRemove(null);
+  };
 
   // Calculate balances
   let youOwe = 0;
   let owedToYou = 0;
+  let pairwiseBalances = {};
   
   if (currentUserId && bills && bills.length > 0) {
+    let netBalance = 0;
+    group?.members.forEach(m => pairwiseBalances[m._id] = 0);
+    
     bills.forEach(bill => {
       const isPayer = bill.paidBy._id === currentUserId;
+      const payerId = bill.paidBy._id;
       
       bill.shares.forEach(share => {
         if (!share.paid) {
-          if (isPayer && share.user._id !== currentUserId) {
-            owedToYou += share.amount;
-          } else if (!isPayer && share.user._id === currentUserId) {
-            youOwe += share.amount;
+          const shareUserId = share.user._id || share.user;
+          if (isPayer && shareUserId !== currentUserId) {
+            netBalance += share.amount; // Someone owes you
+            pairwiseBalances[shareUserId] = (pairwiseBalances[shareUserId] || 0) + share.amount;
+          } else if (!isPayer && shareUserId === currentUserId) {
+            netBalance -= share.amount; // You owe someone
+            pairwiseBalances[payerId] = (pairwiseBalances[payerId] || 0) - share.amount;
           }
         }
       });
     });
+    
+    if (netBalance > 0) {
+      owedToYou = netBalance;
+    } else if (netBalance < 0) {
+      youOwe = Math.abs(netBalance);
+    }
   }
   
   // Check if the current user is the creator of the group
@@ -145,7 +211,10 @@ const GroupDetail = () => {
       </Container>
     );
   }
-  
+  const displayBills = filterMyBills 
+    ? bills.filter(b => b.paidBy._id === currentUserId || b.shares.some(s => s.user._id === currentUserId))
+    : bills;
+
   return (
     <Container className="py-4">
       <Row className="mb-4">
@@ -178,29 +247,41 @@ const GroupDetail = () => {
       </Row>
       
       <Row className="mb-4">
-        <Col md={6} className="mb-3 mb-md-0">
-          <Card className={`shadow-sm ${darkMode ? 'bg-danger text-light' : 'bg-danger text-white'}`} style={{ opacity: 0.9 }}>
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 className="mb-0 text-white-50">You Owe</h6>
-                  <h3 className="mb-0 text-white">{formatAmount(youOwe, user?.currency)}</h3>
+        <Col md={12}>
+          {youOwe > 0 ? (
+            <Card className={`shadow-sm ${darkMode ? 'bg-danger text-light' : 'bg-danger text-white'}`} style={{ opacity: 0.9 }}>
+              <Card.Body>
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 className="mb-0 text-white-50">You Owe Overall</h6>
+                    <h3 className="mb-0 text-white">{formatAmount(youOwe, user?.currency)}</h3>
+                  </div>
                 </div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6}>
-          <Card className={`shadow-sm ${darkMode ? 'bg-success text-light' : 'bg-success text-white'}`} style={{ opacity: 0.9 }}>
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 className="mb-0 text-white-50">Others Owe You</h6>
-                  <h3 className="mb-0 text-white">{formatAmount(owedToYou, user?.currency)}</h3>
+              </Card.Body>
+            </Card>
+          ) : owedToYou > 0 ? (
+            <Card className={`shadow-sm ${darkMode ? 'bg-success text-light' : 'bg-success text-white'}`} style={{ opacity: 0.9 }}>
+              <Card.Body>
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 className="mb-0 text-white-50">Others Owe You Overall</h6>
+                    <h3 className="mb-0 text-white">{formatAmount(owedToYou, user?.currency)}</h3>
+                  </div>
                 </div>
-              </div>
-            </Card.Body>
-          </Card>
+              </Card.Body>
+            </Card>
+          ) : (
+            <Card className={`shadow-sm ${darkMode ? 'bg-secondary text-light' : 'bg-secondary text-white'}`} style={{ opacity: 0.9 }}>
+              <Card.Body>
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 className="mb-0 text-white-50">Your Balance</h6>
+                    <h3 className="mb-0 text-white">Settled Up</h3>
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
+          )}
         </Col>
       </Row>
       
@@ -285,13 +366,24 @@ const GroupDetail = () => {
           </Tab.Pane>
           
           <Tab.Pane eventKey="bills">
-            {bills.length === 0 ? (
+            <div className={`d-flex justify-content-between align-items-center mb-3 p-3 rounded shadow-sm ${darkMode ? 'bg-dark border border-secondary' : 'bg-white border'}`}>
+               <h5 className="mb-0">Group Bills</h5>
+               <Form.Check 
+                 type="switch"
+                 id="my-bills-switch"
+                 label="My Bills Only"
+                 checked={filterMyBills}
+                 onChange={(e) => setFilterMyBills(e.target.checked)}
+                 className={darkMode ? 'text-white' : ''}
+               />
+            </div>
+            {displayBills.length === 0 ? (
               <Card className={`shadow-sm ${darkMode ? 'bg-dark text-white' : ''}`}>
                 <Card.Body className="text-center py-5">
                   <FaReceipt size={48} className="mb-3 text-muted" />
                   <h3>No Bills Yet</h3>
                   <p className="text-muted">
-                    Add a bill to start splitting expenses with group members.
+                    {filterMyBills ? "You are not involved in any bills in this group." : "Add a bill to start splitting expenses with group members."}
                   </p>
                   <Button 
                     as={Link} 
@@ -299,13 +391,13 @@ const GroupDetail = () => {
                     variant="primary"
                     className="mt-2"
                   >
-                    <FaPlus className="me-1" /> Add First Bill
+                    <FaPlus className="me-1" /> Add Bill
                   </Button>
                 </Card.Body>
               </Card>
             ) : (
               <div className="bills-list">
-                {bills.map(bill => (
+                {displayBills.map(bill => (
                   <Card key={bill._id} className={`mb-3 shadow-sm ${darkMode ? 'bg-dark text-white' : ''}`}>
                     <Card.Header className={`d-flex justify-content-between align-items-center ${darkMode ? 'bg-dark border-secondary' : ''}`}>
                       <h5 className="mb-0">{bill.title}</h5>
@@ -412,22 +504,54 @@ const GroupDetail = () => {
                         <Badge bg="primary" className="ms-2" pill>Creator</Badge>
                       )}
                     </div>
-                    {isCreator && member._id !== currentUserId && (
-                      <Button 
-                        variant="outline-danger" 
-                        size="sm"
-                        disabled={removingMember === member._id}
-                        onClick={() => handleRemoveMember(member._id)}
-                      >
-                        {removingMember === member._id ? (
-                          <Spinner animation="border" size="sm" />
-                        ) : (
-                          <>
-                            <FaTimes className="me-1" /> Remove
-                          </>
-                        )}
-                      </Button>
-                    )}
+                    
+                    <div className="d-flex align-items-center">
+                      {member._id !== currentUserId && pairwiseBalances[member._id] !== undefined && pairwiseBalances[member._id] !== 0 && (
+                        <div className="me-3 d-flex align-items-center">
+                          {pairwiseBalances[member._id] > 0 ? (
+                            <Badge bg="success" pill className="me-2">Owes You {formatAmount(pairwiseBalances[member._id], user?.currency)}</Badge>
+                          ) : (
+                            <Badge bg="danger" pill className="me-2">You Owe {formatAmount(Math.abs(pairwiseBalances[member._id]), user?.currency)}</Badge>
+                          )}
+                          
+                          {pairwiseBalances[member._id] > 0 && (
+                            <Button 
+                              variant="outline-success" 
+                              size="sm"
+                              disabled={markingPaid === `bulk-${member._id}`}
+                              onClick={() => handleBulkSettle(member._id)}
+                            >
+                              {markingPaid === `bulk-${member._id}` ? (
+                                <Spinner animation="border" size="sm" />
+                              ) : (
+                                'Settle Up'
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      
+                      {isCreator && member._id !== currentUserId && (
+                        <div title={hasUnsettledBills(member._id) ? "Cannot remove member with unsettled balances" : ""}>
+                          <Button 
+                            variant="outline-danger" 
+                            size="sm"
+                            disabled={removingMember === member._id || hasUnsettledBills(member._id)}
+                            onClick={() => confirmRemoveMember(member)}
+                            className={hasUnsettledBills(member._id) ? "opacity-50 ms-2" : "ms-2"}
+                            style={hasUnsettledBills(member._id) ? { pointerEvents: "none" } : {}}
+                          >
+                            {removingMember === member._id ? (
+                              <Spinner animation="border" size="sm" />
+                            ) : (
+                              <>
+                                <FaTimes className="me-1" /> Remove
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </ListGroup.Item>
                 ))}
               </ListGroup>
@@ -494,6 +618,45 @@ const GroupDetail = () => {
               </>
             ) : (
               'Add Member'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Remove Member Confirmation Modal */}
+      <Modal 
+        show={showRemoveMemberModal} 
+        onHide={() => setShowRemoveMemberModal(false)}
+        centered
+        className={darkMode ? 'dark-modal' : ''}
+      >
+        <Modal.Header closeButton className={darkMode ? 'bg-dark text-white border-secondary' : ''}>
+          <Modal.Title>Confirm Removal</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={darkMode ? 'bg-dark text-white' : ''}>
+          <p>
+            Are you sure you want to remove <strong>{memberToRemove?.first_name} {memberToRemove?.last_name}</strong> from this group?
+          </p>
+          <p className="text-muted small">
+            This action cannot be undone. Only members without unsettled balances can be removed.
+          </p>
+        </Modal.Body>
+        <Modal.Footer className={darkMode ? 'bg-dark text-white border-secondary' : ''}>
+          <Button variant="secondary" onClick={() => setShowRemoveMemberModal(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="danger" 
+            onClick={proceedRemoveMember}
+            disabled={removingMember === memberToRemove?._id}
+          >
+            {removingMember === memberToRemove?._id ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-1" />
+                Removing...
+              </>
+            ) : (
+              'Remove Member'
             )}
           </Button>
         </Modal.Footer>
