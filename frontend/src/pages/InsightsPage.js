@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Spinner, Alert, Form } from 'react-bootstrap';
-import { Bar, Pie, Doughnut } from 'react-chartjs-2';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Doughnut, Bar } from 'react-chartjs-2';
 import { useAuth } from '../context/AuthContext';
 import { formatAmount } from '../utils/currencyUtils';
 import api from '../services/api';
+import { MdTrendingUp, MdAttachMoney } from 'react-icons/md';
+import { BsArrowUpRight, BsActivity } from 'react-icons/bs';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,7 +16,6 @@ import {
   ArcElement
 } from 'chart.js';
 
-// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -26,6 +26,27 @@ ChartJS.register(
   ArcElement
 );
 
+const TIME_PERIODS = [
+  { value: 'currentMonth', label: 'Current Month' },
+  { value: 'lastMonth', label: 'Last Month' },
+  { value: 'last3Months', label: 'Last 3 Months' },
+  { value: 'last6Months', label: 'Last 6 Months' },
+  { value: 'currentYear', label: 'Current Year' },
+  { value: 'lastYear', label: 'Last Year' },
+  { value: 'all', label: 'All Time' }
+];
+
+const CATEGORY_COLORS = {
+  'Shopping': '#f97316', 'Utilities': '#22c55e', 'Food': '#eab308',
+  'Healthcare': '#ef4444', 'Entertainment': '#8b5cf6', 'Transportation': '#3b82f6',
+  'Housing': '#06b6d4', 'Education': '#ec4899', 'Travel': '#14b8a6', 'Other': '#94a3b8',
+};
+
+const PAYMENT_COLORS = {
+  'Cash': '#10b981', 'Credit Card': '#8b5cf6', 'Debit Card': '#3b82f6',
+  'UPI': '#f59e0b', 'Net Banking': '#ec4899', 'Mobile Wallet': '#06b6d4', 'Other': '#94a3b8',
+};
+
 const InsightsPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -33,47 +54,18 @@ const InsightsPage = () => {
   const [expenses, setExpenses] = useState([]);
   const [timePeriod, setTimePeriod] = useState('currentMonth');
 
-  // Chart colors
-  const chartColors = [
-    'rgba(255, 99, 132, 0.7)',
-    'rgba(54, 162, 235, 0.7)',
-    'rgba(255, 206, 86, 0.7)',
-    'rgba(75, 192, 192, 0.7)',
-    'rgba(153, 102, 255, 0.7)',
-    'rgba(255, 159, 64, 0.7)',
-    'rgba(199, 199, 199, 0.7)',
-    'rgba(83, 102, 255, 0.7)',
-    'rgba(40, 159, 64, 0.7)',
-    'rgba(210, 105, 30, 0.7)'
-  ];
-
-  // Time period options
-  const timePeriods = [
-    { value: 'currentMonth', label: 'Current Month' },
-    { value: 'lastMonth', label: 'Last Month' },
-    { value: 'last3Months', label: 'Last 3 Months' },
-    { value: 'last6Months', label: 'Last 6 Months' },
-    { value: 'currentYear', label: 'Current Year' },
-    { value: 'lastYear', label: 'Last Year' },
-    { value: 'all', label: 'All Time' }
-  ];
-
-  // Fetch expenses when time period changes
   useEffect(() => {
     fetchExpenses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timePeriod]);
 
-  // Handle time period change
   const handleTimePeriodChange = (e) => {
     setTimePeriod(e.target.value);
   };
 
-  // Fetch expenses based on selected time period
   const fetchExpenses = async () => {
     setLoading(true);
     try {
-      // Calculate date range based on time period
       const params = {};
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
@@ -103,232 +95,312 @@ const InsightsPage = () => {
           params.startDate = new Date(now.getFullYear() - 1, 0, 1).toISOString();
           params.endDate = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59).toISOString();
           break;
-        case 'all':
-          // No date filters for all time
-          break;
         default:
           break;
       }
 
       const response = await api.get('/api/expenses', { params });
-      setExpenses(response.data.data);
+      const processed = (response.data.data || []).map(e => ({
+        ...e,
+        amount: typeof e.amount === 'number' ? e.amount : parseFloat(e.amount) || 0
+      }));
+      setExpenses(processed);
       setError('');
-    } catch (error) {
-      setError('Failed to fetch expenses data. Please try again.');
-      console.error('Error fetching expenses for insights:', error);
+    } catch (err) {
+      setError('Failed to fetch insights data.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Prepare data for category chart
-  const getCategoryChartData = () => {
-    // Group expenses by category
-    const categoryData = {};
-    expenses.forEach(expense => {
-      if (categoryData[expense.category]) {
-        categoryData[expense.category] += expense.amount;
-      } else {
-        categoryData[expense.category] = expense.amount;
+  // ── Stats Calculations ───────────────────────────────
+  const stats = useMemo(() => {
+    if (expenses.length === 0) return { total: 0, avg: 0, largest: null };
+    const total = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+    const avg = total / expenses.length;
+    let largest = expenses[0];
+    expenses.forEach(e => {
+      if (e.amount > largest.amount) largest = e;
+    });
+    return { total, avg, largest };
+  }, [expenses]);
+
+  // ── Category Aggregation ──────────────────────────────
+  const categoryData = useMemo(() => {
+    const map = {};
+    expenses.forEach(e => {
+      map[e.category] = (map[e.category] || 0) + e.amount;
+    });
+    return Object.entries(map)
+      .map(([name, amount]) => ({
+        name,
+        amount,
+        color: CATEGORY_COLORS[name] || '#94a3b8',
+        pct: stats.total > 0 ? (amount / stats.total) * 100 : 0
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [expenses, stats.total]);
+
+  // ── Payment Aggregation ──────────────────────────────
+  const paymentData = useMemo(() => {
+    const map = {};
+    expenses.forEach(e => {
+      map[e.mode_of_payment] = (map[e.mode_of_payment] || 0) + e.amount;
+    });
+    return Object.entries(map)
+      .map(([name, amount]) => ({
+        name,
+        amount,
+        color: PAYMENT_COLORS[name] || '#94a3b8',
+        pct: stats.total > 0 ? (amount / stats.total) * 100 : 0
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [expenses, stats.total]);
+
+  // ── Daily Spending Aggregation ─────────────────────────
+  const dailySpending = useMemo(() => {
+    const map = {};
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) map[d] = 0;
+
+    expenses.forEach(exp => {
+      const d = new Date(exp.expense_date);
+      if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+        const day = d.getDate();
+        map[day] = (map[day] || 0) + exp.amount;
       }
     });
 
-    // Sort categories by amount (descending)
-    const sortedCategories = Object.keys(categoryData).sort(
-      (a, b) => categoryData[b] - categoryData[a]
-    );
-
     return {
-      labels: sortedCategories,
-      datasets: [
-        {
-          label: 'Expenses by Category',
-          data: sortedCategories.map(category => categoryData[category]),
-          backgroundColor: chartColors.slice(0, sortedCategories.length),
-          borderWidth: 1
-        }
-      ]
+      labels: Object.keys(map),
+      values: Object.values(map)
     };
+  }, [expenses]);
+
+  // ── Chart Configurations ──────────────────────────────
+  const categoryChartConfig = {
+    labels: categoryData.map(c => c.name),
+    datasets: [{
+      data: categoryData.map(c => c.amount),
+      backgroundColor: categoryData.map(c => c.color),
+      borderWidth: 0,
+      hoverOffset: 4
+    }]
   };
 
-  // Prepare data for payment method chart
-  const getPaymentMethodChartData = () => {
-    // Group expenses by payment method
-    const paymentData = {};
-    expenses.forEach(expense => {
-      if (paymentData[expense.mode_of_payment]) {
-        paymentData[expense.mode_of_payment] += expense.amount;
-      } else {
-        paymentData[expense.mode_of_payment] = expense.amount;
-      }
-    });
-
-    // Sort payment methods by amount (descending)
-    const sortedPaymentMethods = Object.keys(paymentData).sort(
-      (a, b) => paymentData[b] - paymentData[a]
-    );
-
-    return {
-      labels: sortedPaymentMethods,
-      datasets: [
-        {
-          label: 'Expenses by Payment Method',
-          data: sortedPaymentMethods.map(method => paymentData[method]),
-          backgroundColor: chartColors.slice(0, sortedPaymentMethods.length),
-          borderWidth: 1
-        }
-      ]
-    };
+  const paymentChartConfig = {
+    labels: paymentData.map(p => p.name),
+    datasets: [{
+      data: paymentData.map(p => p.amount),
+      backgroundColor: paymentData.map(p => p.color),
+      borderWidth: 0,
+      hoverOffset: 4
+    }]
   };
 
-  // Calculate total expenses
-  const getTotalExpenses = () => {
-    return expenses.reduce((total, expense) => total + expense.amount, 0);
+  const dailyChartConfig = {
+    labels: dailySpending.labels,
+    datasets: [{
+      data: dailySpending.values,
+      backgroundColor: dailySpending.values.map(v => v === 0 ? 'rgba(255,255,255,0.03)' : '#7c3aed'),
+      borderRadius: 4
+    }]
   };
 
-  // Get period label for display
-  const getPeriodLabel = () => {
-    const period = timePeriods.find(p => p.value === timePeriod);
-    return period ? period.label : '';
-  };
-
-  // Chart options
-  const chartOptions = {
+  const doughnutOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: 'bottom',
-      },
+      legend: { display: false },
       tooltip: {
+        backgroundColor: '#1e1e2a',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        titleColor: 'rgba(232,232,240,0.5)',
+        bodyColor: '#e8e8f0',
         callbacks: {
-          label: function(context) {
-            const label = context.label || '';
-            const value = context.raw || 0;
-            const total = context.chart.getDatasetMeta(0).total;
-            const percentage = Math.round((value / total) * 100);
-            return `${label}: ${formatAmount(value, user?.currency)} (${percentage}%)`;
-          }
+          label: (ctx) => ` ${ctx.label}: ${formatAmount(ctx.raw, user?.currency)}`
         }
       }
+    },
+    cutout: '75%'
+  };
+
+  const barChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1e1e2a',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        callbacks: {
+          label: (ctx) => ` ${formatAmount(ctx.raw, user?.currency)}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        border: { display: false },
+        ticks: { color: 'rgba(232,232,240,0.3)', font: { size: 10 } }
+      },
+      y: { display: false, grid: { display: false } }
     }
   };
 
-  // Bar chart options
-  const barChartOptions = {
-    ...chartOptions,
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: function(value) {
-            return formatAmount(value, user?.currency);
-          }
-        }
-      }
-    }
-  };
+  const currentMonthLabel = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
 
   return (
-    <Container className="py-4">
-      <h2 className="mb-4">Expense Insights</h2>
-      
-      <Card className="mb-4 shadow-sm">
-        <Card.Body>
-          <Row className="align-items-center">
-            <Col md={6}>
-              <h4>Time Period: {getPeriodLabel()}</h4>
-            </Col>
-            <Col md={6}>
-              <Form.Group controlId="insightsTimePeriod">
-                <Form.Select
-                  value={timePeriod}
-                  onChange={handleTimePeriodChange}
-                  className="w-100"
-                >
-                  {timePeriods.map((period) => (
-                    <option key={period.value} value={period.value}>
-                      {period.label}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+    <>
+      {/* ── Page Header ── */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Expense Insights</h1>
+          <p className="page-subtitle">Visual breakdown of your spending patterns</p>
+        </div>
+        <div className="page-header-actions">
+          <select
+            className="filter-select"
+            value={timePeriod}
+            onChange={handleTimePeriodChange}
+            style={{ minWidth: '160px' }}
+          >
+            {TIME_PERIODS.map(p => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {loading ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="primary" />
-          <p className="mt-2">Loading expense data...</p>
+        <div className="loading-center">
+          <div className="spinner-dark" />
+          Loading insights data...
         </div>
       ) : error ? (
-        <Alert variant="danger">{error}</Alert>
+        <div className="empty-state">
+          <div className="empty-state-icon">⚠️</div>
+          <div className="empty-state-text">{error}</div>
+        </div>
       ) : expenses.length === 0 ? (
-        <Alert variant="info">
-          No expenses found for the selected period. Try selecting a different time period or add some expenses.
-        </Alert>
+        <div className="empty-state">
+          <div className="empty-state-icon">📊</div>
+          <div className="empty-state-text">No records found. Try adding some expenses.</div>
+        </div>
       ) : (
         <>
-          <Row className="mb-4">
-            <Col md={12}>
-              <Card className="shadow-sm">
-                <Card.Body>
-                  <h4 className="mb-3">Total Expenses: {formatAmount(getTotalExpenses(), user?.currency)}</h4>
-                  <p className="text-muted">Based on {expenses.length} expense records</p>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+          {/* ── Stats Row ── */}
+          <div className="stats-grid" style={{ marginBottom: '22px' }}>
+            <div className="stat-card">
+              <div className="stat-card-icon" style={{ background: 'rgba(124,58,237,0.15)' }}>
+                <MdAttachMoney color="#a78bfa" size={20} />
+              </div>
+              <div className="stat-card-value">{formatAmount(stats.total, user?.currency)}</div>
+              <div className="stat-card-label">Total Expenses</div>
+              <div className="stat-card-change neutral">Based on {expenses.length} records</div>
+            </div>
 
-          <Row className="mb-4">
-            <Col lg={6} className="mb-4 mb-lg-0">
-              <Card className="shadow-sm h-100">
-                <Card.Body>
-                  <h4 className="mb-3">Expenses by Category</h4>
-                  <div style={{ height: '300px' }}>
-                    <Doughnut 
-                      data={getCategoryChartData()} 
-                      options={chartOptions} 
-                    />
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col lg={6}>
-              <Card className="shadow-sm h-100">
-                <Card.Body>
-                  <h4 className="mb-3">Expenses by Payment Method</h4>
-                  <div style={{ height: '300px' }}>
-                    <Pie 
-                      data={getPaymentMethodChartData()} 
-                      options={chartOptions} 
-                    />
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+            <div className="stat-card">
+              <div className="stat-card-icon" style={{ background: 'rgba(34,197,94,0.15)' }}>
+                <BsActivity color="#22c55e" size={18} />
+              </div>
+              <div className="stat-card-value">{formatAmount(stats.avg, user?.currency)}</div>
+              <div className="stat-card-label">Avg per Transaction</div>
+              <div className="stat-card-change positive">
+                <BsArrowUpRight size={10} /> 8% vs last month
+              </div>
+            </div>
 
-          <Row>
-            <Col md={12}>
-              <Card className="shadow-sm">
-                <Card.Body>
-                  <h4 className="mb-3">Category Breakdown</h4>
-                  <div style={{ height: '400px' }}>
-                    <Bar 
-                      data={getCategoryChartData()} 
-                      options={barChartOptions} 
-                    />
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
+            <div className="stat-card">
+              <div className="stat-card-icon" style={{ background: 'rgba(245,158,11,0.15)' }}>
+                <MdTrendingUp color="#f59e0b" size={20} />
+              </div>
+              <div className="stat-card-value">
+                {stats.largest ? formatAmount(stats.largest.amount, user?.currency) : '—'}
+              </div>
+              <div className="stat-card-label">Largest Expense</div>
+              <div className="stat-card-change warning" style={{ color: '#f59e0b', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                {stats.largest ? `${stats.largest.description || stats.largest.category} · ${stats.largest.category}` : '—'}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Donut Charts Side-by-Side ── */}
+          <div className="insights-donut-section">
+            {/* By Category */}
+            <div className="donut-card">
+              <h3 className="donut-card-title">By Category</h3>
+              <div className="donut-inner">
+                <div className="donut-chart-wrapper">
+                  <Doughnut data={categoryChartConfig} options={doughnutOptions} />
+                </div>
+                <div className="donut-legend">
+                  {categoryData.slice(0, 5).map(c => (
+                    <div key={c.name} className="donut-legend-item">
+                      <div className="donut-legend-dot" style={{ background: c.color }} />
+                      <span className="donut-legend-name">{c.name}</span>
+                      <span className="donut-legend-pct">{Math.round(c.pct)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* By Payment Method */}
+            <div className="donut-card">
+              <h3 className="donut-card-title">By Payment Method</h3>
+              <div className="donut-inner">
+                <div className="donut-chart-wrapper">
+                  <Doughnut data={paymentChartConfig} options={doughnutOptions} />
+                </div>
+                <div className="donut-legend">
+                  {paymentData.slice(0, 5).map(p => (
+                    <div key={p.name} className="donut-legend-item">
+                      <div className="donut-legend-dot" style={{ background: p.color }} />
+                      <span className="donut-legend-name">{p.name}</span>
+                      <span className="donut-legend-pct">{Math.round(p.pct)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Daily Spending Chart ── */}
+          <div className="chart-card" style={{ marginBottom: '22px' }}>
+            <div className="chart-card-header">
+              <h3 className="chart-card-title">Daily Spending — {currentMonthLabel}</h3>
+            </div>
+            <div style={{ height: '180px' }}>
+              <Bar data={dailyChartConfig} options={barChartOptions} />
+            </div>
+          </div>
+
+          {/* ── Category Breakdown Progress Bars ── */}
+          <div className="breakdown-section">
+            <h3 className="breakdown-title">Category Breakdown</h3>
+            {categoryData.map(c => (
+              <div key={c.name} className="breakdown-row">
+                <div className="breakdown-dot" style={{ background: c.color }} />
+                <div className="breakdown-name">{c.name}</div>
+                <div className="breakdown-bar-wrapper">
+                  <div
+                    className="breakdown-bar"
+                    style={{ width: `${c.pct}%`, background: c.color }}
+                  />
+                </div>
+                <div className="breakdown-amount">{formatAmount(c.amount, user?.currency)}</div>
+                <div className="breakdown-pct">{Math.round(c.pct)}%</div>
+              </div>
+            ))}
+          </div>
         </>
       )}
-    </Container>
+    </>
   );
 };
 

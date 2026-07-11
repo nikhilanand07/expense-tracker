@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { useGroups } from '../context/GroupContext';
-import { useTheme } from '../context/ThemeContext';
-import { FaUsers, FaPlus, FaUserFriends } from 'react-icons/fa';
+import { FaUsers, FaPlus, FaArrowRight } from 'react-icons/fa';
+import CreateGroupModal from '../components/CreateGroupModal';
+
+const GROUP_THEME_COLORS = [
+  { border: '#8b5cf6', badgeBg: 'rgba(139,92,246,0.15)', badgeText: '#a78bfa' },
+  { border: '#06b6d4', badgeBg: 'rgba(6,182,212,0.15)', badgeText: '#67e8f9' },
+  { border: '#f59e0b', badgeBg: 'rgba(245,158,11,0.15)', badgeText: '#fcd34d' },
+];
 
 const GroupsPage = () => {
   const { groups, loading, error, fetchGroups } = useGroups();
-  const { darkMode } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   useEffect(() => {
     fetchGroups();
@@ -20,121 +25,119 @@ const GroupsPage = () => {
     setRefreshing(false);
   };
 
+  const getThemeColor = (index) => {
+    return GROUP_THEME_COLORS[index % GROUP_THEME_COLORS.length];
+  };
+
   return (
-    <Container className="py-4">
-      {/* Header: stacks on mobile, side-by-side on desktop */}
-      <div className="mb-4">
-        <h1 className="mb-1">
-          <FaUsers className="me-2" />
-          My Groups
-        </h1>
-        <p className="text-muted mt-1 mb-3">
-          Create groups, split bills, and track shared expenses with friends.
-        </p>
-        <div className="d-flex gap-2">
-          <Button 
-            variant={darkMode ? "outline-light" : "outline-secondary"} 
+    <>
+      {/* ── Page Header ── */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">My Groups</h1>
+          <p className="page-subtitle">
+            Create groups, split bills, and track shared expenses with friends.
+          </p>
+        </div>
+        <div className="page-header-actions">
+          <button
             onClick={handleRefresh}
             disabled={refreshing}
+            className="btn-ghost"
+            style={{ fontSize: '12px', padding: '8px 14px' }}
           >
-            {refreshing ? (
-              <Spinner animation="border" size="sm" />
-            ) : (
-              'Refresh'
-            )}
-          </Button>
-          <Button 
-            as={Link} 
-            to="/groups/create" 
-            variant="primary"
-            className="d-flex align-items-center"
-          >
-            <FaPlus className="me-1" /> New Group
-          </Button>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button onClick={() => setIsCreatingGroup(true)} className="btn-primary-dark">
+            <FaPlus size={12} /> New Group
+          </button>
         </div>
       </div>
 
       {error && (
-        <Alert variant="danger" className="mb-4">
-          {error}
-        </Alert>
+        <div className="empty-state" style={{ marginBottom: '24px', borderColor: 'var(--danger)' }}>
+          <div className="empty-state-icon">⚠️</div>
+          <div className="empty-state-text">{error}</div>
+        </div>
       )}
 
       {loading && !refreshing ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </Spinner>
+        <div className="loading-center">
+          <div className="spinner-dark" />
+          Loading groups...
         </div>
-      ) : groups.length === 0 ? (
-        <Card className={`shadow-sm ${darkMode ? 'bg-dark text-white' : ''}`}>
-          <Card.Body className="text-center py-5">
-            <FaUserFriends size={48} className="mb-3 text-muted" />
-            <h3>No Groups Yet</h3>
-            <p className="text-muted">
-              Create a group to start splitting bills with friends.
-            </p>
-            <Button 
-              as={Link} 
-              to="/groups/create" 
-              variant="primary"
-              className="mt-2"
-            >
-              <FaPlus className="me-1" /> Create First Group
-            </Button>
-          </Card.Body>
-        </Card>
       ) : (
-        <Row xs={1} md={2} lg={3} className="g-4">
-          {groups.map(group => (
-            <Col key={group._id}>
-              <Card 
-                as={Link} 
-                to={`/groups/${group._id}`} 
-                className={`h-100 shadow-sm group-card ${darkMode ? 'bg-dark text-white' : ''}`}
-                style={{ textDecoration: 'none', color: 'inherit' }}
+        <div className="groups-grid">
+          {groups.map((group, index) => {
+            const theme = getThemeColor(index);
+            const memberCount = group.members?.length || 0;
+
+            return (
+              <Link
+                key={group._id}
+                to={`/groups/${group._id}`}
+                className="group-card"
+                style={{
+                  borderTop: `2px solid ${theme.border}`,
+                  animationDelay: `${index * 0.05}s`
+                }}
               >
-                <Card.Body>
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <div className="group-icon">
-                      <FaUsers size={24} className={darkMode ? 'text-info' : 'text-primary'} />
-                    </div>
-                    <span className="badge bg-info rounded-pill">
-                      {group.members.length} {group.members.length === 1 ? 'member' : 'members'}
-                    </span>
+                <div className="group-card-top">
+                  <div className="group-card-icon" style={{ background: theme.badgeBg, color: theme.badgeText }}>
+                    <FaUsers size={20} />
                   </div>
-                  <Card.Title>{group.name}</Card.Title>
-                  {group.description && (
-                    <Card.Text className="text-muted small">
-                      {group.description.length > 100 
-                        ? `${group.description.substring(0, 100)}...` 
-                        : group.description}
-                    </Card.Text>
-                  )}
-                </Card.Body>
-                <Card.Footer className={`small ${darkMode ? 'bg-dark border-secondary' : 'bg-light'}`}>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <span>Created: {new Date(group.createdAt).toLocaleDateString()}</span>
-                    <Button 
-                      variant="link" 
-                      size="sm" 
-                      className={darkMode ? 'text-info' : 'text-primary'}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.location.href = `/groups/${group._id}`;
-                      }}
-                    >
-                      View Details
-                    </Button>
-                  </div>
-                </Card.Footer>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                  <span
+                    className="group-member-badge"
+                    style={{ background: theme.badgeBg, color: theme.badgeText }}
+                  >
+                    {memberCount} {memberCount === 1 ? 'member' : 'members'}
+                  </span>
+                </div>
+
+                <h3 className="group-card-name">{group.name}</h3>
+
+                <p className="group-card-desc">
+                  {group.description
+                    ? group.description.length > 100
+                      ? `${group.description.substring(0, 100)}...`
+                      : group.description
+                    : 'No description provided.'}
+                </p>
+
+                <div className="group-card-footer">
+                  <span className="group-card-date">
+                    Created: {new Date(group.createdAt).toLocaleDateString()}
+                  </span>
+                  <span className="group-card-link" style={{ color: theme.badgeText }}>
+                    View Details <FaArrowRight size={10} />
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+
+          {/* Dotted empty group creator button */}
+          <button
+            onClick={() => setIsCreatingGroup(true)}
+            className="group-create-card"
+            style={{ animationDelay: `${groups.length * 0.05}s`, width: '100%', background: 'transparent' }}
+          >
+            <div className="group-create-icon">
+              <FaPlus />
+            </div>
+            <div className="group-create-text">Create a new group</div>
+          </button>
+        </div>
       )}
-    </Container>
+
+      {/* ── Create Group Modal ── */}
+      {isCreatingGroup && (
+        <CreateGroupModal
+          onClose={() => setIsCreatingGroup(false)}
+          onCreated={fetchGroups}
+        />
+      )}
+    </>
   );
 };
 
