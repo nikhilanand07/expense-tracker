@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Spinner, Container } from 'react-bootstrap';
 import { useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -24,6 +24,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   const { user, loading } = useAuth();
+  const location = useLocation();
+  const hideHeader = ['/login', '/signup'].includes(location.pathname);
   
   if (loading) {
     return (
@@ -38,10 +40,10 @@ function App() {
   return (
     <ThemeProvider>
       <GroupProvider>
-        <Header />
+        {!hideHeader && <Header />}
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
+          <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
           <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
           <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
           
