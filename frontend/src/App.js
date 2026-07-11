@@ -6,7 +6,6 @@ import { ThemeProvider } from './context/ThemeContext';
 import { GroupProvider } from './context/GroupContext';
 
 // Pages
-import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import Dashboard from './pages/Dashboard';
