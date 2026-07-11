@@ -1635,6 +1635,13 @@ input:checked + .slider:before {
   font-size: 20px;
 }
 
+.settings-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
 @media (max-width: 1200px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .chart-section { grid-template-columns: 1fr; }
@@ -1654,4 +1661,6 @@ input:checked + .slider:before {
   .page-header { flex-direction: column; align-items: flex-start; gap: 14px; }
   .filter-bar { gap: 12px; }
   .filter-select { min-width: 120px; }
+  .settings-layout { grid-template-columns: 1fr; gap: 20px; }
+  .settings-form-grid { grid-template-columns: 1fr; }
 }

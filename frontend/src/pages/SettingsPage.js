@@ -161,7 +161,7 @@ const SettingsPage = () => {
           <div className="settings-card">
             <h3 className="settings-card-title">Profile Information</h3>
             <form onSubmit={handleProfileSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div className="settings-form-grid">
                 <div className="modal-form-field">
                   <label className="modal-label" htmlFor="settings-name">Full Name</label>
                   <input
